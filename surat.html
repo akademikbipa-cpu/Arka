@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARKA — Generate Surat</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .surat-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 20px;
+      transition: var(--transition);
+    }
+    .surat-card:hover { box-shadow: var(--shadow-md); }
+    .surat-card-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--white);
+    }
+    .surat-card-header.pmb     { background: var(--green); }
+    .surat-card-header.baak    { background: var(--purple); }
+    .surat-card-header.kolektif{ background: var(--primary); }
+    .surat-card-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .surat-card-subtitle {
+      font-size: 0.78rem;
+      opacity: 0.85;
+      margin-top: 2px;
+    }
+    .surat-card-icon { font-size: 2rem; }
+    .surat-card-body { padding: 20px; }
+    .surat-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .surat-syarat {
+      background: var(--gray-light);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 0.82rem;
+      color: var(--text);
+    }
+    .surat-syarat-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--primary);
+    }
+    .surat-syarat ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .surat-syarat li { margin-bottom: 3px; }
+    .log-surat-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.82rem;
+    }
+    .log-surat-item:last-child { border-bottom: none; }
+    .log-surat-icon { font-size: 1.2rem; width: 28px; text-align: center; }
+    .log-surat-info { flex: 1; }
+    .log-surat-nama { font-weight: 600; }
+    .log-surat-meta { color: var(--text-muted); font-size: 0.78rem; }
+    .filter-surat {
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .filter-surat-title {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 0.875rem;
+      margin-bottom: 12px;
+    }
+    .result-box {
+      background: var(--green-light);
+      border: 2px solid var(--green);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 12px;
+      display: none;
+    }
+    .result-box-title {
+      font-weight: 700;
+      color: var(--green);
+      margin-bottom: 10px;
+    }
+    .result-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--green);
+      color: var(--white);
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-right: 8px;
+      margin-top: 4px;
+    }
+    .result-link:hover { background: #155234; }
+  </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+  <div class="loading-text">Memuat...</div>
+</div>
+
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar">
+    <div class="sidebar-logo">
+      <div>
+        <div class="sidebar-logo-text">🎓 ARKA</div>
+        <div class="sidebar-logo-sub">SLA PMB STMIK Bina Patria</div>
+      </div>
+    </div>
+    <div class="sidebar-section">Menu</div>
+    <nav id="sidebar-menu"></nav>
+    <div class="sidebar-bottom">
+      <button id="btn-logout" class="sidebar-item w-100"
+        style="border:none;background:none;color:rgba(255,255,255,0.6);
+               font-size:0.875rem;cursor:pointer;text-align:left;">
+        🚪 Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-title">📜 Generate Surat</div>
+    <div class="header-right">
+      <span class="role-badge" id="user-role"></span>
+      <div class="user-avatar" id="user-avatar"></div>
+      <span class="user-name" id="user-name"></span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="page-title">Generate Surat</div>
+      <div class="page-subtitle">
+        3 jenis surat resmi — PDF otomatis dari sistem
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr;
+                gap:20px; align-items:start;">
+
+      <!-- Kolom Kiri: Surat 1 & 2 -->
+      <div>
+
+        <!-- SURAT 1 — PMB -->
+        <div class="surat-card" id="card-surat1">
+          <div class="surat-card-header pmb">
+            <div>
+              <div class="surat-card-title">
+                📄 Surat 1 — Penerimaan Sementara
+              </div>
+              <div class="surat-card-subtitle">
+                Ranah PMB | Per camaba
+              </div>
+            </div>
+            <div class="surat-card-icon">📨</div>
+          </div>
+          <div class="surat-card-body">
+            <div class="surat-desc">
+              Surat pemberitahuan hasil seleksi yang dikirim ke
+              camaba setelah dinyatakan lolos. Berisi checklist
+              berkas yang harus dilengkapi dan instruksi pembayaran.
+            </div>
+            <div class="surat-syarat">
+              <div class="surat-syarat-title">Syarat Generate:</div>
+              <ul>
+                <li>Data camaba sudah terdaftar di sistem</li>
+                <li>Status proses minimal: DAFTAR</li>
+              </ul>
+            </div>
+
+            <!-- Pilih Camaba -->
+            <div class="form-group">
+              <label class="form-label">
+                Pilih Camaba
+                <span class="required">*</span>
+              </label>
+              <input type="text" id="search-surat1"
+                     class="search-input w-100"
+                     placeholder="🔍 Ketik nama camaba..."
+                     oninput="filterCamabaSurat1(this.value)" />
+              <div id="dropdown-surat1"
+                   style="border:1px solid var(--border);
+                          border-radius:var(--radius);
+                          max-height:200px; overflow-y:auto;
+                          display:none; margin-top:4px;
+                          background:var(--white);
+                          box-shadow:var(--shadow);">
+              </div>
+              <input type="hidden" id="selected-camaba-surat1" />
+              <div id="selected-name-surat1"
+                   style="margin-top:8px; font-size:0.875rem;
+                          color:var(--green); font-weight:600;">
+              </div>
+            </div>
+
+            <button class="btn btn-success w-100"
+                    onclick="generateSurat(1)"
+                    id="btn-surat1">
+              📄 Generate Surat 1 (PDF)
+            </button>
+
+            <div id="result-surat1" class="result-box"></div>
+          </div>
+        </div>
+
+        <!-- SURAT 2 — BAAK SKD -->
+        <div class="surat-card" id="card-surat2">
+          <div class="surat-card-header baak">
+            <div>
+              <div class="surat-card-title">
+                🪪 Surat 2 — SKD + NIM
+              </div>
+              <div class="surat-card-subtitle">
+                Ranah BAAK | Per camaba | Butuh NIM
+              </div>
+            </div>
+            <div class="surat-card-icon">🎓</div>
+          </div>
+          <div class="surat-card-body">
+            <div class="surat-desc">
+              Surat Keterangan Diterima (SKD) yang diterbitkan
+              BAAK setelah NIM dirilis. Berisi NIM resmi,
+              password SIAKAD, dan ketentuan penting.
+            </div>
+            <div class="surat-syarat">
+              <div class="surat-syarat-title">Syarat Generate:</div>
+              <ul>
+                <li>Berkas dinyatakan LENGKAP</li>
+                <li>NIM sudah dirilis oleh BAAK</li>
+                <li>Status proses: NIM RILIS</li>
+              </ul>
+            </div>
+
+            <!-- Pilih Camaba -->
+            <div class="form-group">
+              <label class="form-label">
+                Pilih Camaba
+                <span class="required">*</span>
+              </label>
+              <input type="text" id="search-surat2"
+                     class="search-input w-100"
+                     placeholder="🔍 Ketik nama camaba (NIM sudah ada)..."
+                     oninput="filterCamabaSurat2(this.value)" />
+              <div id="dropdown-surat2"
+                   style="border:1px solid var(--border);
+                          border-radius:var(--radius);
+                          max-height:200px; overflow-y:auto;
+                          display:none; margin-top:4px;
+                          background:var(--white);
+                          box-shadow:var(--shadow);">
+              </div>
+              <input type="hidden" id="selected-camaba-surat2" />
+              <div id="selected-name-surat2"
+                   style="margin-top:8px; font-size:0.875rem;
+                          color:var(--purple); font-weight:600;">
+              </div>
+            </div>
+
+            <button class="btn w-100"
+                    style="background:var(--purple); color:white;"
+                    onclick="generateSurat(2)"
+                    id="btn-surat2">
+              🪪 Generate SKD (PDF)
+            </button>
+
+            <div id="result-surat2" class="result-box"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Kolom Kanan: Surat 3 & Log -->
+      <div>
+
+        <!-- SURAT 3 — SK Kolektif -->
+        <div class="surat-card" id="card-surat3">
+          <div class="surat-card-header kolektif">
+            <div>
+              <div class="surat-card-title">
+                📋 Surat 3 — SK Kolektif Mahasiswa Baru
+              </div>
+              <div class="surat-card-subtitle">
+                Ranah BAAK | Kolektif | PDF + Excel
+              </div>
+            </div>
+            <div class="surat-card-icon">📑</div>
+          </div>
+          <div class="surat-card-body">
+            <div class="surat-desc">
+              Surat Keputusan Kolektif yang menetapkan semua
+              mahasiswa baru per gelombang/tahun akademik.
+              Dasar pelaporan ke PDDIKTI dan pembagian kelas.
+            </div>
+            <div class="surat-syarat">
+              <div class="surat-syarat-title">Syarat Generate:</div>
+              <ul>
+                <li>Minimal 1 camaba berstatus NIM RILIS</li>
+                <li>Filter opsional per gelombang/prodi</li>
+                <li>Output: PDF + Excel</li>
+              </ul>
+            </div>
+
+            <!-- Filter SK Kolektif -->
+            <div class="filter-surat">
+              <div class="filter-surat-title">
+                🔧 Filter SK Kolektif (Opsional)
+              </div>
+              <div class="form-grid">
+                <div class="form-group" style="margin-bottom:10px;">
+                  <label class="form-label">Gelombang</label>
+                  <select id="sk-gelombang" class="form-control">
+                    <option value="">Semua Gelombang</option>
+                    <option value="GEL-2026-1">Gelombang 1</option>
+                    <option value="GEL-2026-2">Gelombang 2</option>
+                    <option value="GEL-2026-3">Gelombang 3</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                  <label class="form-label">Program Studi</label>
+                  <select id="sk-prodi" class="form-control">
+                    <option value="">Semua Prodi</option>
+                    <option value="11">S1 Teknik Informatika</option>
+                    <option value="22">D3 Manajemen Informatika</option>
+                    <option value="33">S1 Sistem Informasi</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                  <label class="form-label">Jenis Kelas</label>
+                  <select id="sk-kelas" class="form-control">
+                    <option value="">Semua Kelas</option>
+                    <option value="REG">Reguler</option>
+                    <option value="PAR">Paralel</option>
+                    <option value="FLEX">Flex Class</option>
+                    <option value="RPL">RPL</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                  <label class="form-label">Tahun Akademik</label>
+                  <input id="sk-ta" type="text"
+                         class="form-control"
+                         value="2026/2027"
+                         placeholder="2026/2027" />
+                </div>
+              </div>
+
+              <!-- Preview jumlah -->
+              <div id="sk-preview-count"
+                   style="font-size:0.82rem;
+                          color:var(--text-muted);
+                          margin-bottom:10px;">
+              </div>
+
+              <button class="btn btn-outline btn-sm"
+                      onclick="previewSKCount()">
+                🔍 Preview Jumlah
+              </button>
+            </div>
+
+            <button class="btn btn-primary w-100"
+                    onclick="generateSurat(3)"
+                    id="btn-surat3">
+              📋 Generate SK Kolektif (PDF + Excel)
+            </button>
+
+            <div id="result-surat3" class="result-box"></div>
+          </div>
+        </div>
+
+        <!-- Log Surat -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📋 Riwayat Surat Tergenerate</div>
+            <button class="btn btn-outline btn-sm"
+                    onclick="loadSuratLog()">
+              🔄
+            </button>
+          </div>
+          <div id="surat-log-list">
+            <div class="text-center text-muted"
+                 style="padding:20px; font-size:0.875rem;">
+              ⏳ Memuat riwayat...
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Scripts -->
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+
+let allCamabaList = [];
+
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  if (!initPage(["ADMIN","PMB","AKADEMIK"])) return;
+  loadCamaba();
+  loadSuratLog();
+  setupCardAccess();
+});
+
+// ── Setup Card Access per Role ────────────────────────────────
+function setupCardAccess() {
+  const user = getUser();
+  if (!user) return;
+  const role = user.userRole;
+
+  // Surat 1 hanya PMB & Admin
+  if (!["ADMIN","PMB"].includes(role)) {
+    document.getElementById("card-surat1")
+            .style.opacity = "0.5";
+    document.getElementById("btn-surat1").disabled = true;
+    document.getElementById("btn-surat1").title =
+      "Hanya PMB yang dapat generate Surat 1";
+  }
+
+  // Surat 2 & 3 hanya BAAK & Admin
+  if (!["ADMIN","AKADEMIK"].includes(role)) {
+    ["card-surat2","card-surat3"].forEach(id => {
+      document.getElementById(id).style.opacity = "0.5";
+    });
+    document.getElementById("btn-surat2").disabled = true;
+    document.getElementById("btn-surat3").disabled = true;
+    document.getElementById("btn-surat2").title =
+      "Hanya BAAK yang dapat generate Surat 2";
+    document.getElementById("btn-surat3").title =
+      "Hanya BAAK yang dapat generate Surat 3";
+  }
+}
+
+// ── Load Camaba ───────────────────────────────────────────────
+async function loadCamaba() {
+  try {
+    const res = await Camaba.getAll();
+    if (res.success) allCamabaList = res.data || [];
+  } catch (e) { /* silent */ }
+}
+
+// ── Filter Camaba Surat 1 ─────────────────────────────────────
+function filterCamabaSurat1(keyword) {
+  showDropdown("dropdown-surat1", keyword, allCamabaList,
+               "selected-camaba-surat1", "selected-name-surat1",
+               null, "search-surat1");
+}
+
+// ── Filter Camaba Surat 2 (hanya yang sudah ada NIM) ─────────
+function filterCamabaSurat2(keyword) {
+  const withNim = allCamabaList.filter(c => c.nim);
+  showDropdown("dropdown-surat2", keyword, withNim,
+               "selected-camaba-surat2", "selected-name-surat2",
+               null, "search-surat2");
+}
+
+// ── Show Dropdown ─────────────────────────────────────────────
+function showDropdown(dropId, keyword, list,
+                      hiddenId, nameId, colorClass, inputId) {
+  const drop = document.getElementById(dropId);
+
+  if (!keyword || keyword.length < 2) {
+    drop.style.display = "none";
+    return;
+  }
+
+  const kw = keyword.toLowerCase();
+  const filtered = list.filter(c =>
+    c.namaLengkap?.toLowerCase().includes(kw) ||
+    c.nim?.toLowerCase().includes(kw) ||
+    c.id?.toLowerCase().includes(kw)
+  ).slice(0, 10);
+
+  if (!filtered.length) {
+    drop.innerHTML = `
+      <div style="padding:12px; color:var(--text-muted);
+                  font-size:0.875rem; text-align:center;">
+        Tidak ditemukan
+      </div>`;
+    drop.style.display = "block";
+    return;
+  }
+
+  drop.innerHTML = filtered.map(c => `
+    <div onclick="selectCamaba('${c.id}','${c.namaLengkap}',
+                  '${c.nim || ""}','${c.programStudi || ""}',
+                  '${hiddenId}','${nameId}','${dropId}','${inputId}')"
+         style="padding:10px 14px; cursor:pointer;
+                border-bottom:1px solid var(--border);
+                font-size:0.875rem;"
+         onmouseover="this.style.background='var(--primary-light)'"
+         onmouseout="this.style.background=''">
+      <strong>${c.namaLengkap}</strong>
+      <div style="font-size:0.75rem; color:var(--text-muted);">
+        ${c.programStudi} |
+        ${c.nim
+          ? `<span style="color:var(--purple);">NIM: ${c.nim}</span>`
+          : "Belum ada NIM"}
+        | ${c.id}
+      </div>
+    </div>
+  `).join("");
+
+  drop.style.display = "block";
+}
+
+function selectCamaba(id, nama, nim, prodi,
+                      hiddenId, nameId, dropId, inputId) {
+  document.getElementById(hiddenId).value = id;
+  document.getElementById(nameId).textContent =
+    `✓ ${nama} — ${prodi}${nim ? " | NIM: " + nim : ""}`;
+  document.getElementById(dropId).style.display  = "none";
+  document.getElementById(inputId).value = nama;
+}
+
+// ── Generate Surat ────────────────────────────────────────────
+async function generateSurat(nomor) {
+  let camabaId, resultId;
+
+  if (nomor === 1) {
+    camabaId = document.getElementById("selected-camaba-surat1").value;
+    resultId = "result-surat1";
+    if (!camabaId) {
+      showError("Pilih camaba terlebih dahulu.");
+      return;
+    }
+  } else if (nomor === 2) {
+    camabaId = document.getElementById("selected-camaba-surat2").value;
+    resultId = "result-surat2";
+    if (!camabaId) {
+      showError("Pilih camaba terlebih dahulu.");
+      return;
+    }
+  } else {
+    resultId = "result-surat3";
+  }
+
+  const btnId = "btn-surat" + nomor;
+  const btn   = document.getElementById(btnId);
+  btn.disabled    = true;
+  btn.textContent = "⏳ Generating...";
+
+  showLoading(
+    nomor === 3
+      ? "Generating SK Kolektif (PDF + Excel)..."
+      : "Generating surat PDF..."
+  );
+
+  try {
+    let res;
+
+    if (nomor === 1) {
+      res = await Surat.generate1(camabaId);
+    } else if (nomor === 2) {
+      res = await Surat.generate2(camabaId);
+    } else {
+      const filters = {
+        gelombang:    document.getElementById("sk-gelombang").value || null,
+        prodi:        document.getElementById("sk-prodi").value     || null,
+        kelas:        document.getElementById("sk-kelas").value     || null,
+        tahunAkademik:document.getElementById("sk-ta").value        || null,
+      };
+      res = await Surat.generate3(filters);
+    }
+
+    if (res.success) {
+      showSuccess("Surat berhasil digenerate!");
+      renderResult(resultId, res, nomor);
+      loadSuratLog();
+    } else {
+      showError(res.message || "Gagal generate surat.");
+    }
+
+  } catch (e) {
+    showError("Terjadi kesalahan saat generate surat.");
+  } finally {
+    hideLoading();
+    btn.disabled = false;
+    btn.textContent = getBtnLabel(nomor);
+  }
+}
+
+// ── Render Result ─────────────────────────────────────────────
+function renderResult(elId, res, nomor) {
+  const el = document.getElementById(elId);
+  el.style.display = "block";
+
+  let links = "";
+  if (res.pdfUrl) {
+    links += `
+      <a href="${res.pdfUrl}" target="_blank"
+         class="result-link">
+        📄 Download PDF
+      </a>`;
+  }
+  if (res.excelUrl) {
+    links += `
+      <a href="${res.excelUrl}" target="_blank"
+         class="result-link"
+         style="background:var(--green-dark, #155234);">
+        📊 Buka Excel
+      </a>`;
+  }
+
+  el.innerHTML = `
+    <div class="result-box-title">
+      ✅ Surat ${nomor} Berhasil Digenerate!
+    </div>
+    <div style="font-size:0.82rem; color:var(--green);
+                margin-bottom:10px;">
+      No. Surat: <strong>${res.noSurat || "-"}</strong>
+      ${res.jumlahMhs
+        ? ` | Jumlah: <strong>${res.jumlahMhs} mahasiswa</strong>`
+        : ""}
+      ${res.nim
+        ? ` | NIM: <strong>${res.nim}</strong>`
+        : ""}
+    </div>
+    <div>${links}</div>
+    <div style="font-size:0.75rem; color:var(--text-muted);
+                margin-top:8px;">
+      ⚠️ Link download aktif selama sesi. Segera download
+      sebelum session berakhir.
+    </div>
+  `;
+}
+
+// ── Preview SK Count ──────────────────────────────────────────
+function previewSKCount() {
+  const gelombang = document.getElementById("sk-gelombang").value;
+  const prodi     = document.getElementById("sk-prodi").value;
+  const kelas     = document.getElementById("sk-kelas").value;
+
+  let filtered = allCamabaList.filter(
+    c => c.statusProses === "NIM RILIS"
+  );
+
+  if (gelombang) filtered = filtered.filter(
+    c => c.gelombang === gelombang
+  );
+  if (prodi)     filtered = filtered.filter(
+    c => c.kodeProdi === prodi
+  );
+  if (kelas)     filtered = filtered.filter(
+    c => c.jenisKelas === kelas
+  );
+
+  const el = document.getElementById("sk-preview-count");
+  el.innerHTML = filtered.length > 0
+    ? `📊 Akan generate untuk <strong>${filtered.length} mahasiswa</strong> berstatus NIM RILIS.`
+    : `⚠️ Tidak ada mahasiswa berstatus NIM RILIS dengan filter tersebut.`;
+}
+
+// ── Load Surat Log ────────────────────────────────────────────
+async function loadSuratLog() {
+  try {
+    // Ambil dari camaba — pakai data yang sudah ada
+    // (surat log tidak punya endpoint tersendiri,
+    //  kita tampilkan dari allCamabaList)
+    const el = document.getElementById("surat-log-list");
+
+    if (!allCamabaList.length) {
+      el.innerHTML = `
+        <div class="text-center text-muted"
+             style="padding:20px; font-size:0.875rem;">
+          Belum ada riwayat surat
+        </div>`;
+      return;
+    }
+
+    // Tampilkan camaba yang sudah ada NIM (sudah dapat SKD)
+    const withNim = allCamabaList
+      .filter(c => c.nim)
+      .slice(0, 8);
+
+    if (!withNim.length) {
+      el.innerHTML = `
+        <div class="text-center text-muted"
+             style="padding:20px; font-size:0.875rem;">
+          Belum ada surat yang digenerate
+        </div>`;
+      return;
+    }
+
+    el.innerHTML = withNim.map(c => `
+      <div class="log-surat-item">
+        <div class="log-surat-icon">🪪</div>
+        <div class="log-surat-info">
+          <div class="log-surat-nama">${c.namaLengkap}</div>
+          <div class="log-surat-meta">
+            NIM: ${c.nim} &nbsp;|&nbsp;
+            ${c.programStudi} &nbsp;|&nbsp;
+            Rilis: ${formatTanggal(c.tglNimRilis)}
+          </div>
+        </div>
+        <button class="btn btn-sm btn-outline"
+                onclick="regenSurat2('${c.id}')">
+          🔄 SKD
+        </button>
+      </div>
+    `).join("");
+
+  } catch (e) { /* silent */ }
+}
+
+// ── Regen Surat 2 ─────────────────────────────────────────────
+async function regenSurat2(camabaId) {
+  if (!["ADMIN","AKADEMIK"].includes(getUser()?.userRole)) {
+    showError("Hanya BAAK yang dapat generate SKD.");
+    return;
+  }
+
+  showLoading("Regenerate SKD...");
+  try {
+    const res = await Surat.generate2(camabaId);
+    if (res.success) {
+      showSuccess("SKD berhasil digenerate!");
+      if (res.pdfUrl) window.open(res.pdfUrl, "_blank");
+    } else {
+      showError(res.message || "Gagal generate SKD.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function getBtnLabel(nomor) {
+  const labels = {
+    1: "📄 Generate Surat 1 (PDF)",
+    2: "🪪 Generate SKD (PDF)",
+    3: "📋 Generate SK Kolektif (PDF + Excel)",
+  };
+  return labels[nomor] || "Generate";
+}
+
+// Tutup dropdown kalau klik di luar
+document.addEventListener("click", (e) => {
+  ["dropdown-surat1","dropdown-surat2"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.contains(e.target)) {
+      el.style.display = "none";
+    }
+  });
+});
+</script>
+
+</body>
+</html>
