@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARKA — Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .recap-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .recap-table th { font-size: 0.75rem; }
+    .recap-table td { font-size: 0.85rem; }
+    .recap-table td:not(:first-child) { text-align: center; }
+    .recap-table th:not(:first-child) { text-align: center; }
+    .sla-section {
+      background: var(--red-light);
+      border: 1px solid var(--red);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .sla-title {
+      color: var(--red);
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sla-empty {
+      text-align: center;
+      padding: 16px;
+      color: var(--green);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .last-updated {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: right;
+      margin-top: 8px;
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: var(--text-muted); }
+    .stat-value { font-weight: 700; color: var(--primary); }
+    .progress-bar-wrap {
+      height: 6px;
+      background: var(--gray-light);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .progress-bar {
+      height: 100%;
+      border-radius: 10px;
+      background: var(--primary-mid);
+      transition: width 0.6s ease;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+  <div class="loading-text">Memuat dashboard...</div>
+</div>
+
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar">
+    <div class="sidebar-logo">
+      <div>
+        <div class="sidebar-logo-text">🎓 ARKA</div>
+        <div class="sidebar-logo-sub">SLA PMB STMIK Bina Patria</div>
+      </div>
+    </div>
+    <div class="sidebar-section">Menu</div>
+    <nav id="sidebar-menu"></nav>
+    <div class="sidebar-bottom">
+      <button id="btn-logout" class="sidebar-item w-100"
+              style="border:none; background:none; color:rgba(255,255,255,0.6);
+                     font-size:0.875rem; cursor:pointer; text-align:left;">
+        🚪 Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-title">📊 Dashboard Monitoring PMB</div>
+    <div class="header-right">
+      <span class="role-badge" id="user-role"></span>
+      <div class="user-avatar" id="user-avatar"></div>
+      <span class="user-name" id="user-name"></span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header d-flex justify-between align-center">
+      <div>
+        <div class="page-title">Dashboard Monitoring</div>
+        <div class="page-subtitle">
+          Rekap real-time data PMB STMIK Bina Patria
+        </div>
+      </div>
+      <button class="btn btn-outline" onclick="loadDashboard()">
+        🔄 Refresh
+      </button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-value" id="kpi-total">—</div>
+        <div class="kpi-label">Total Pendaftar</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-value" id="kpi-lunas">—</div>
+        <div class="kpi-label">Sudah Lunas</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-value" id="kpi-lengkap">—</div>
+        <div class="kpi-label">Berkas Lengkap</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-value" id="kpi-nim">—</div>
+        <div class="kpi-label">NIM Sudah Rilis</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-value" id="kpi-pemberkasan">—</div>
+        <div class="kpi-label">Masih Pemberkasan</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-value" id="kpi-belumbayar">—</div>
+        <div class="kpi-label">Belum Bayar</div>
+      </div>
+    </div>
+
+    <!-- SLA Alert -->
+    <div class="sla-section" id="sla-section">
+      <div class="sla-title">
+        ⚠️ ALERT SLA — Berkas Belum Lengkap Lebih dari 7 Hari
+      </div>
+      <div id="sla-content">
+        <div class="sla-empty">⏳ Memuat data...</div>
+      </div>
+    </div>
+
+    <!-- Rekap Grid -->
+    <div class="recap-grid">
+
+      <!-- Per Prodi -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🎓 Per Program Studi</div>
+        </div>
+        <div class="table-wrapper">
+          <table class="recap-table">
+            <thead>
+              <tr>
+                <th>Prodi</th>
+                <th>Total</th>
+                <th>Lunas</th>
+                <th>NIM</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-prodi">
+              <tr><td colspan="4" class="text-center text-muted">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Per Kelas -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🏫 Per Jenis Kelas</div>
+        </div>
+        <div class="table-wrapper">
+          <table class="recap-table">
+            <thead>
+              <tr>
+                <th>Kelas</th>
+                <th>Total</th>
+                <th>Lunas</th>
+                <th>NIM</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-kelas">
+              <tr><td colspan="4" class="text-center text-muted">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Per Gelombang -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🌊 Per Gelombang</div>
+      </div>
+      <div class="table-wrapper">
+        <table class="recap-table">
+          <thead>
+            <tr>
+              <th>Gelombang</th>
+              <th>Total</th>
+              <th>Lunas</th>
+              <th>Berkas Lengkap</th>
+              <th>NIM Rilis</th>
+              <th>Belum Bayar</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-gelombang">
+            <tr>
+              <td colspan="7" class="text-center text-muted">Memuat...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Per Beasiswa -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🎖️ Per Beasiswa</div>
+      </div>
+      <div class="table-wrapper">
+        <table class="recap-table">
+          <thead>
+            <tr>
+              <th>Beasiswa</th>
+              <th>Total</th>
+              <th>Lunas</th>
+              <th>Berkas Lengkap</th>
+              <th>NIM Rilis</th>
+              <th>Belum Bayar</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-beasiswa">
+            <tr>
+              <td colspan="6" class="text-center text-muted">Memuat...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="last-updated" id="last-updated"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Scripts -->
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+// ── Init ────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  if (!initPage()) return;
+  loadDashboard();
+});
+
+// ── Load Dashboard ──────────────────────────────────────────
+async function loadDashboard() {
+  showLoading("Memuat dashboard...");
+  try {
+    const res = await Dashboard.get();
+    if (!res.success) {
+      showError(res.message || "Gagal memuat dashboard.");
+      return;
+    }
+    renderKPI(res.data.kpi);
+    renderSlaAlerts(res.data.slaAlerts);
+    renderProdi(res.data.perProdi);
+    renderKelas(res.data.perKelas);
+    renderGelombang(res.data.perGelombang);
+    renderBeasiswa(res.data.perBeasiswa);
+
+    const el = document.getElementById("last-updated");
+    if (el) el.textContent = "Terakhir diperbarui: " + res.data.lastUpdated;
+
+  } catch (e) {
+    showError("Terjadi kesalahan saat memuat dashboard.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── Render KPI ──────────────────────────────────────────────
+function renderKPI(kpi) {
+  document.getElementById("kpi-total").textContent       = kpi.total        || 0;
+  document.getElementById("kpi-lunas").textContent       = kpi.lunas        || 0;
+  document.getElementById("kpi-lengkap").textContent     = kpi.lengkap      || 0;
+  document.getElementById("kpi-nim").textContent         = kpi.nimRilis     || 0;
+  document.getElementById("kpi-pemberkasan").textContent = kpi.pemberkasan  || 0;
+  document.getElementById("kpi-belumbayar").textContent  = kpi.belumBayar   || 0;
+}
+
+// ── Render SLA Alerts ───────────────────────────────────────
+function renderSlaAlerts(alerts) {
+  const el = document.getElementById("sla-content");
+  if (!alerts || alerts.length === 0) {
+    el.innerHTML = `
+      <div class="sla-empty">
+        ✅ Tidak ada berkas yang melebihi batas waktu SLA
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nama</th>
+            <th>Status Berkas</th>
+            <th>Tgl Input</th>
+            <th>Hari Ke-</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${alerts.map(a => `
+            <tr class="sla-alert-row">
+              <td>${a.id}</td>
+              <td><strong>${a.nama}</strong></td>
+              <td>${getStatusBadge(a.statusBerkas)}</td>
+              <td>${formatTanggal(a.tglInput)}</td>
+              <td>
+                <span class="badge badge-red">
+                  Hari ke-${a.hariKe}
+                </span>
+              </td>
+              <td>
+                <a href="berkas.html?id=${a.id}"
+                   class="btn btn-sm btn-warning">
+                  📁 Cek Berkas
+                </a>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── Render Per Prodi ────────────────────────────────────────
+function renderProdi(data) {
+  const el = document.getElementById("tbl-prodi");
+  if (!data) { el.innerHTML = emptyRow(4); return; }
+
+  const prodiMap = {
+    "11": "S1 Teknik Informatika",
+    "22": "D3 Manajemen Informatika",
+    "33": "S1 Sistem Informasi",
+  };
+
+  el.innerHTML = Object.entries(prodiMap).map(([kode, nama]) => {
+    const d = data[kode] || { total:0, lunas:0, nimRilis:0 };
+    return `
+      <tr>
+        <td><strong>${nama}</strong></td>
+        <td>${d.total}</td>
+        <td>${d.lunas}</td>
+        <td>${d.nimRilis}</td>
+      </tr>`;
+  }).join("") + `
+    <tr style="background:var(--primary-light); font-weight:700;">
+      <td>TOTAL</td>
+      <td>${sumProp(data,"total")}</td>
+      <td>${sumProp(data,"lunas")}</td>
+      <td>${sumProp(data,"nimRilis")}</td>
+    </tr>`;
+}
+
+// ── Render Per Kelas ────────────────────────────────────────
+function renderKelas(data) {
+  const el = document.getElementById("tbl-kelas");
+  if (!data) { el.innerHTML = emptyRow(4); return; }
+
+  const kelasMap = {
+    "REG":  "Reguler",
+    "PAR":  "Paralel",
+    "FLEX": "Flex Class",
+    "RPL":  "RPL",
+  };
+
+  el.innerHTML = Object.entries(kelasMap).map(([kode, nama]) => {
+    const d = data[kode] || { total:0, lunas:0, nimRilis:0 };
+    return `
+      <tr>
+        <td><strong>${nama}</strong>
+          <span class="badge badge-gray"
+                style="margin-left:4px;">${kode}</span>
+        </td>
+        <td>${d.total}</td>
+        <td>${d.lunas}</td>
+        <td>${d.nimRilis}</td>
+      </tr>`;
+  }).join("") + `
+    <tr style="background:var(--primary-light); font-weight:700;">
+      <td>TOTAL</td>
+      <td>${sumProp(data,"total")}</td>
+      <td>${sumProp(data,"lunas")}</td>
+      <td>${sumProp(data,"nimRilis")}</td>
+    </tr>`;
+}
+
+// ── Render Per Gelombang ────────────────────────────────────
+function renderGelombang(data) {
+  const el = document.getElementById("tbl-gelombang");
+  if (!data) { el.innerHTML = emptyRow(7); return; }
+
+  const gelMap = {
+    "GEL-2026-1": "Gelombang 1",
+    "GEL-2026-2": "Gelombang 2",
+    "GEL-2026-3": "Gelombang 3",
+  };
+
+  el.innerHTML = Object.entries(gelMap).map(([kode, nama]) => {
+    const d = data[kode] || {
+      total:0, lunas:0, lengkap:0, nimRilis:0, belumBayar:0
+    };
+    const pct = d.total > 0
+      ? Math.round((d.nimRilis / d.total) * 100) : 0;
+    return `
+      <tr>
+        <td><strong>${nama}</strong></td>
+        <td>${d.total}</td>
+        <td>${d.lunas}</td>
+        <td>${d.lengkap}</td>
+        <td>${d.nimRilis}</td>
+        <td>${d.belumBayar}</td>
+        <td style="min-width:120px;">
+          <div style="font-size:0.75rem;
+                      color:var(--text-muted);
+                      margin-bottom:3px;">
+            ${pct}% NIM Rilis
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar"
+                 style="width:${pct}%;
+                        background:${pct === 100
+                          ? 'var(--green)'
+                          : 'var(--primary-mid)'};">
+            </div>
+          </div>
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+// ── Render Per Beasiswa ─────────────────────────────────────
+function renderBeasiswa(data) {
+  const el = document.getElementById("tbl-beasiswa");
+  if (!data || Object.keys(data).length === 0) {
+    el.innerHTML = emptyRow(6);
+    return;
+  }
+
+  el.innerHTML = Object.entries(data).map(([nama, d]) => `
+    <tr>
+      <td><strong>${nama}</strong></td>
+      <td>${d.total     || 0}</td>
+      <td>${d.lunas     || 0}</td>
+      <td>${d.lengkap   || 0}</td>
+      <td>${d.nimRilis  || 0}</td>
+      <td>${d.belumBayar|| 0}</td>
+    </tr>
+  `).join("");
+}
+
+// ── Helpers ─────────────────────────────────────────────────
+function sumProp(obj, prop) {
+  return Object.values(obj).reduce((s, v) => s + (v[prop] || 0), 0);
+}
+
+function emptyRow(cols) {
+  return `<tr><td colspan="${cols}"
+               class="text-center text-muted"
+               style="padding:20px;">
+    Tidak ada data
+  </td></tr>`;
+}
+</script>
+
+</body>
+</html>
