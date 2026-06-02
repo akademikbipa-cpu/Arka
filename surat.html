@@ -476,6 +476,11 @@ async function loadCamaba() {
 
 // ── Filter Camaba Surat 1 ─────────────────────────────────────
 function filterCamabaSurat1(keyword) {
+  // Reset pilihan sebelumnya jika user mengetik ulang
+  document.getElementById("selected-camaba-surat1").value = "";
+  const inp = document.getElementById("search-surat1");
+  inp.style.borderColor = "";
+  inp.style.boxShadow   = "";
   showDropdown("dropdown-surat1", keyword, allCamabaList,
                "selected-camaba-surat1", "selected-name-surat1",
                null, "search-surat1");
@@ -483,6 +488,11 @@ function filterCamabaSurat1(keyword) {
 
 // ── Filter Camaba Surat 2 (hanya yang sudah ada NIM) ─────────
 function filterCamabaSurat2(keyword) {
+  // Reset pilihan sebelumnya jika user mengetik ulang
+  document.getElementById("selected-camaba-surat2").value = "";
+  const inp = document.getElementById("search-surat2");
+  inp.style.borderColor = "";
+  inp.style.boxShadow   = "";
   const withNim = allCamabaList.filter(c => c.nim);
   showDropdown("dropdown-surat2", keyword, withNim,
                "selected-camaba-surat2", "selected-name-surat2",
@@ -516,10 +526,13 @@ function showDropdown(dropId, keyword, list,
     return;
   }
 
-  drop.innerHTML = filtered.map(c => `
-    <div onclick="selectCamaba('${c.id}','${c.namaLengkap}',
-                  '${c.nim || ""}','${c.programStudi || ""}',
-                  '${hiddenId}','${nameId}','${dropId}','${inputId}')"
+  drop.innerHTML = filtered.map((c, i) => `
+    <div class="dropdown-item"
+         data-idx="${i}"
+         data-dropid="${dropId}"
+         data-hiddenid="${hiddenId}"
+         data-nameid="${nameId}"
+         data-inputid="${inputId}"
          style="padding:10px 14px; cursor:pointer;
                 border-bottom:1px solid var(--border);
                 font-size:0.875rem;"
@@ -527,7 +540,7 @@ function showDropdown(dropId, keyword, list,
          onmouseout="this.style.background=''">
       <strong>${c.namaLengkap}</strong>
       <div style="font-size:0.75rem; color:var(--text-muted);">
-        ${c.programStudi} |
+        ${c.programStudi || "-"} |
         ${c.nim
           ? `<span style="color:var(--purple);">NIM: ${c.nim}</span>`
           : "Belum ada NIM"}
@@ -536,16 +549,44 @@ function showDropdown(dropId, keyword, list,
     </div>
   `).join("");
 
+  // Simpan data camaba ke drop element agar bisa diakses saat mousedown
+  drop._camabaData = filtered;
   drop.style.display = "block";
+
+  // Pasang mousedown (bukan click) agar tidak terpengaruh blur/close event
+  drop.onmousedown = function(e) {
+    e.preventDefault(); // Cegah input kehilangan focus & dropdown menutup duluan
+    const item = e.target.closest(".dropdown-item");
+    if (!item) return;
+    const idx      = parseInt(item.dataset.idx);
+    const camaba   = drop._camabaData[idx];
+    const hId      = item.dataset.hiddenid;
+    const nId      = item.dataset.nameid;
+    const dId      = item.dataset.dropid;
+    const iId      = item.dataset.inputid;
+    selectCamaba(camaba.id, camaba.namaLengkap, camaba.nim || "",
+                 camaba.programStudi || "", hId, nId, dId, iId);
+  };
 }
 
 function selectCamaba(id, nama, nim, prodi,
                       hiddenId, nameId, dropId, inputId) {
-  document.getElementById(hiddenId).value = id;
-  document.getElementById(nameId).textContent =
+  const hiddenEl = document.getElementById(hiddenId);
+  const nameEl   = document.getElementById(nameId);
+  const dropEl   = document.getElementById(dropId);
+  const inputEl  = document.getElementById(inputId);
+
+  if (hiddenEl) hiddenEl.value = id;
+  if (nameEl)   nameEl.textContent =
     `✓ ${nama} — ${prodi}${nim ? " | NIM: " + nim : ""}`;
-  document.getElementById(dropId).style.display  = "none";
-  document.getElementById(inputId).value = nama;
+  if (dropEl)   dropEl.style.display = "none";
+  if (inputEl)  inputEl.value = nama;
+
+  // Visual feedback: border hijau pada input sebagai konfirmasi
+  if (inputEl) {
+    inputEl.style.borderColor = "var(--green)";
+    inputEl.style.boxShadow   = "0 0 0 2px rgba(22,163,74,0.15)";
+  }
 }
 
 // ── Generate Surat ────────────────────────────────────────────
