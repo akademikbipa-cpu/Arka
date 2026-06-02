@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARKA — Berkas</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .berkas-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .berkas-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: var(--primary);
+      color: var(--white);
+    }
+    .berkas-card-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .berkas-card-body { padding: 16px 20px; }
+    .berkas-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .berkas-row:last-child { border-bottom: none; }
+    .berkas-name {
+      flex: 1;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .berkas-type {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .berkas-checks {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .check-toggle {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .check-toggle label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+    .check-toggle select {
+      width: 58px;
+      padding: 4px 2px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      text-align: center;
+      cursor: pointer;
+      background: var(--white);
+    }
+    .check-toggle select.done {
+      border-color: var(--green);
+      background: var(--green-light);
+    }
+    .check-toggle select.missing {
+      border-color: var(--red);
+      background: var(--red-light);
+    }
+    .camaba-info-bar {
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .camaba-info-name {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--primary);
+    }
+    .camaba-info-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .sp-section {
+      background: var(--yellow-light);
+      border: 1px solid #F0B429;
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 8px;
+    }
+    .sp-title {
+      font-weight: 700;
+      color: var(--yellow);
+      font-size: 0.875rem;
+      margin-bottom: 12px;
+    }
+    .rpl-section {
+      background: var(--purple-light);
+      border: 1px solid var(--purple);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 8px;
+    }
+    .rpl-title {
+      font-weight: 700;
+      color: var(--purple);
+      font-size: 0.875rem;
+      margin-bottom: 12px;
+    }
+    .banner-baak {
+      background: var(--green);
+      color: var(--white);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .banner-baak-icon { font-size: 1.5rem; }
+  </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+  <div class="loading-text">Memuat...</div>
+</div>
+
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar">
+    <div class="sidebar-logo">
+      <div>
+        <div class="sidebar-logo-text">🎓 ARKA</div>
+        <div class="sidebar-logo-sub">SLA PMB STMIK Bina Patria</div>
+      </div>
+    </div>
+    <div class="sidebar-section">Menu</div>
+    <nav id="sidebar-menu"></nav>
+    <div class="sidebar-bottom">
+      <button id="btn-logout" class="sidebar-item w-100"
+        style="border:none;background:none;color:rgba(255,255,255,0.6);
+               font-size:0.875rem;cursor:pointer;text-align:left;">
+        🚪 Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-title">📁 Checklist Berkas Camaba</div>
+    <div class="header-right">
+      <span class="role-badge" id="user-role"></span>
+      <div class="user-avatar" id="user-avatar"></div>
+      <span class="user-name" id="user-name"></span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header d-flex justify-between align-center flex-wrap gap-1">
+      <div>
+        <div class="page-title">Checklist Berkas</div>
+        <div class="page-subtitle">
+          Tracking kelengkapan berkas per camaba — PMB: CRU | BAAK: Read
+        </div>
+      </div>
+      <button class="btn btn-outline" onclick="loadBerkasList()">
+        🔄 Refresh
+      </button>
+    </div>
+
+    <!-- Banner BAAK notif -->
+    <div id="banner-baak" class="hidden"></div>
+
+    <!-- Filter -->
+    <div class="card" style="padding:16px; margin-bottom:16px;">
+      <div class="filter-bar">
+        <input type="text" id="search-input" class="search-input"
+               placeholder="🔍 Cari nama camaba..." />
+        <select id="filter-status-berkas" class="form-control"
+                style="width:auto; min-width:160px;">
+          <option value="">Semua Status Berkas</option>
+          <option value="BELUM ADA">Belum Ada</option>
+          <option value="TIDAK LENGKAP">Tidak Lengkap</option>
+          <option value="LENGKAP">Lengkap</option>
+        </select>
+        <select id="filter-kelas" class="form-control"
+                style="width:auto; min-width:140px;">
+          <option value="">Semua Kelas</option>
+          <option value="REG">Reguler</option>
+          <option value="PAR">Paralel</option>
+          <option value="FLEX">Flex Class</option>
+          <option value="RPL">RPL</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="resetFilter()">
+          ✕ Reset
+        </button>
+      </div>
+      <div style="font-size:0.78rem; color:var(--text-muted); margin-top:8px;">
+        Menampilkan <strong id="count-shown">0</strong> dari
+        <strong id="count-total">0</strong> data
+      </div>
+    </div>
+
+    <!-- Table List -->
+    <div class="card" style="padding:0;" id="section-list">
+      <div class="table-wrapper">
+        <table id="tbl-berkas">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama Camaba</th>
+              <th>Prodi</th>
+              <th>Kelas</th>
+              <th>Status Berkas</th>
+              <th>Verifikasi Oleh</th>
+              <th>Tgl Verifikasi</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-berkas">
+            <tr>
+              <td colspan="8" class="text-center text-muted"
+                  style="padding:32px;">
+                ⏳ Memuat data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Detail Berkas per Camaba -->
+    <div id="section-detail" class="hidden">
+
+      <!-- Back button -->
+      <button class="btn btn-outline mb-2"
+              onclick="backToList()">
+        ← Kembali ke Daftar
+      </button>
+
+      <!-- Camaba Info Bar -->
+      <div class="camaba-info-bar" id="camaba-info-bar"></div>
+
+      <!-- Banner lengkap -->
+      <div id="banner-lengkap" class="hidden"></div>
+
+      <form id="form-berkas" onsubmit="return false;">
+        <input type="hidden" id="berkas-camaba-id" />
+
+        <!-- Berkas Wajib -->
+        <div class="berkas-card">
+          <div class="berkas-card-header">
+            <div class="berkas-card-title">
+              📄 Berkas Wajib
+            </div>
+            <span id="status-badge-berkas"></span>
+          </div>
+          <div class="berkas-card-body">
+
+            <!-- Ijazah / SKL -->
+            <div class="berkas-row">
+              <div>
+                <div class="berkas-name">Ijazah / SKL</div>
+                <div class="berkas-type">
+                  Fotokopi dilegalisir 2 lembar
+                </div>
+              </div>
+              <div class="berkas-checks">
+                <div class="check-toggle">
+                  <label>Fisik</label>
+                  <select id="b-ijazah-fisik"
+                          onchange="updateCheckStyle(this)">
+                    <option value="✗">✗</option>
+                    <option value="✓">✓</option>
+                    <option value="-">-</option>
+                  </select>
+                </div>
+                <div class="check-toggle">
+                  <label>Digital</label>
+                  <select id="b-ijazah-digital"
+                          onchange="updateCheckStyle(this)">
+                    <option value="✗">✗</option>
+                    <option value="✓">✓</option>
+                    <option value="-">-</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- KTP -->
+            <div class="berkas-row">
+              <div>
+                <div class="berkas-name">KTP</div>
+                <div class="berkas-type">Fotokopi 1 lembar</div>
+              </div>
+              <div class="berkas-checks">
+                <div class="check-toggle">
+                  <label>Fisik</label>
+                  <select id="b-ktp-fisik"
+                          onchange="updateCheckStyle(this)">
+                    <option value="✗">✗</option>
+                    <option value="✓">✓</option>
+                    <option value="-">-</option>
+                  </select>
+                </div>
+                <div class="check-toggle">
+                  <label>Digital</label>
+                  <select id="b-ktp-digital"
+                          onchange="updateCheckStyle(this)">
+                    <option value="✗">✗</option>
+                    <option value="✓">✓</option>
+                    <option value="-">-</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- KK -->
+            <div class="berkas-row">
+              <div>
+                <div class="berkas-name">Kartu Keluarga (KK)</div>
+                <div class="berkas-type">Fotokopi 1 lembar</div>
+              </div>
+              <div class="berkas-checks">
+                <div class="check-toggle">
+                  <label>Fisik</label>
+                  <select id="b-kk-fisik"
+                          onchange="updateCheckStyle(this)">
+                    <option value="✗">✗</option>
+                    <option value="✓">✓</option>
+                    <option value="-">-</option>
+                  </select>
+                </div>
+                <div class="check-toggle">
+                  <label>Digital</label>
+                  <select id="b-kk-digital"
+                          onchange="updateCheckStyle(this)">
+                    <option value="✗">✗</option>
+                    <option value="✓">✓</option>
+                    <option value="-">-</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pas Foto -->
+            <div class="berkas-row">
+              <div>
+                <div class="berkas-name">Pas Foto 3×4</div>
+                <div class="berkas-type">
+                  3 lembar berwarna (fisik) / file digital
+                </div>
+              </div>
+              <div class="berkas-checks">
+                <div class="check-toggle">
+                  <label>Fisik</label>
+                  <select id="b-foto-fisik"
+                          onchange="updateCheckStyle(this)">
+                    <option value="✗">✗</option>
+                    <option value="✓">✓</option>
+                    <option value="-">-</option>
+                  </select>
+                </div>
+                <div class="check-toggle">
+                  <label>Digital</label>
+                  <select id="b-foto-digital"
+                          onchange="updateCheckStyle(this)">
+                    <option value="✗">✗</option>
+                    <option value="✓">✓</option>
+                    <option value="-">-</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulir Pendaftaran -->
+            <div class="berkas-row">
+              <div>
+                <div class="berkas-name">Formulir Pendaftaran</div>
+                <div class="berkas-type">
+                  Diisi lengkap dan ditandatangani
+                </div>
+              </div>
+              <div class="berkas-checks">
+                <div class="check-toggle">
+                  <label>Fisik</label>
+                  <select id="b-formulir-fisik"
+                          onchange="updateCheckStyle(this)">
+                    <option value="✗">✗</option>
+                    <option value="✓">✓</option>
+                    <option value="-">-</option>
+                  </select>
+                </div>
+                <div class="check-toggle">
+                  <label>Digital</label>
+                  <select id="b-formulir-digital"
+                          onchange="updateCheckStyle(this)">
+                    <option value="✗">✗</option>
+                    <option value="✓">✓</option>
+                    <option value="-">-</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Surat Pernyataan -->
+        <div class="berkas-card">
+          <div class="berkas-card-header"
+               style="background: var(--orange);">
+            <div class="berkas-card-title">
+              📝 Surat Pernyataan Kesanggupan
+            </div>
+          </div>
+          <div class="berkas-card-body">
+            <div class="sp-section">
+              <div class="sp-title">
+                ⚠️ Berlaku jika ada berkas yang belum bisa dipenuhi
+                (SKL, Ijazah belum terbit, dll)
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Ada Surat Pernyataan?</label>
+                  <select id="b-ada-sp" class="form-control">
+                    <option value="✗">✗ Tidak Ada</option>
+                    <option value="✓">✓ Ada</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tipe SP</label>
+                  <select id="b-tipe-sp" class="form-control">
+                    <option value="-">-</option>
+                    <option value="SP-I">SP-I</option>
+                    <option value="SP-II">SP-II</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tanggal SP</label>
+                  <input id="b-tgl-sp" type="date" class="form-control" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Batas Waktu SP</label>
+                  <input id="b-batas-sp" type="date" class="form-control" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dokumen RPL -->
+        <div class="berkas-card" id="section-rpl">
+          <div class="berkas-card-header"
+               style="background: var(--purple);">
+            <div class="berkas-card-title">
+              🎓 Dokumen RPL (Rekognisi Pembelajaran Lampau)
+            </div>
+          </div>
+          <div class="berkas-card-body">
+            <div class="rpl-section">
+              <div class="rpl-title">
+                Wajib dilengkapi untuk mahasiswa jalur RPL
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Dokumen RPL</label>
+                  <select id="b-dok-rpl" class="form-control">
+                    <option value="-">-</option>
+                    <option value="✗">✗ Belum Ada</option>
+                    <option value="✓">✓ Sudah Ada</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">
+                    Rekomendasi Konversi Kaprodi
+                  </label>
+                  <select id="b-rek-konversi" class="form-control">
+                    <option value="-">-</option>
+                    <option value="✗">✗ Belum Ada</option>
+                    <option value="✓">✓ Sudah Ada</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tombol Simpan -->
+        <div id="section-action" class="d-flex gap-1"
+             style="margin-top:8px;">
+          <button type="button" class="btn btn-primary"
+                  onclick="simpanBerkas()">
+            💾 Simpan Checklist
+          </button>
+          <button type="button" class="btn btn-outline"
+                  onclick="backToList()">
+            Batal
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+  </main>
+</div>
+
+<!-- Scripts -->
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+
+let allCamabaList = [];
+let currentCamaba = null;
+
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  if (!initPage()) return;
+  loadBerkasList();
+  loadBaakNotif();
+
+  // Cek apakah ada ?id= di URL
+  const params = new URLSearchParams(window.location.search);
+  const id     = params.get("id");
+  if (id) openDetail(id);
+});
+
+// ── Load List ─────────────────────────────────────────────────
+async function loadBerkasList() {
+  showLoading("Memuat data berkas...");
+  try {
+    const res = await Camaba.getAll();
+    if (!res.success) {
+      showError(res.message || "Gagal memuat data.");
+      return;
+    }
+    allCamabaList = res.data || [];
+    renderList(allCamabaList);
+    document.getElementById("count-total").textContent =
+      allCamabaList.length;
+    setupFilters();
+  } catch (e) {
+    showError("Terjadi kesalahan saat memuat data.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── Render List ───────────────────────────────────────────────
+function renderList(data) {
+  const tbody = document.getElementById("tbody-berkas");
+  document.getElementById("count-shown").textContent = data.length;
+
+  if (!data.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8">
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <div class="empty-state-title">Tidak ada data</div>
+          </div>
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map((c, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>
+        <strong>${c.namaLengkap}</strong>
+        <div style="font-size:0.75rem; color:var(--text-muted);">
+          ${c.id}
+        </div>
+      </td>
+      <td style="font-size:0.82rem;">${c.programStudi || "-"}</td>
+      <td>
+        <span class="badge badge-gray">
+          ${getKelasLabel(c.jenisKelas)}
+        </span>
+      </td>
+      <td>${getStatusBadge(c.statusBerkas)}</td>
+      <td style="font-size:0.82rem;">${c.dibuatOleh || "-"}</td>
+      <td style="font-size:0.82rem;">
+        ${formatTanggal(c.tglUpdate)}
+      </td>
+      <td>
+        <button class="btn btn-sm btn-primary"
+                onclick="openDetail('${c.id}')">
+          📁 Cek Berkas
+        </button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+// ── Open Detail ───────────────────────────────────────────────
+async function openDetail(camabaId) {
+  showLoading("Memuat detail berkas...");
+  try {
+    // Ambil data camaba
+    const resCamaba = await Camaba.getById(camabaId);
+    if (!resCamaba.success) {
+      showError("Data camaba tidak ditemukan.");
+      return;
+    }
+    currentCamaba = resCamaba.data;
+
+    // Ambil data berkas
+    const resBerkas = await Berkas.get(camabaId);
+
+    // Render info bar
+    renderInfoBar(currentCamaba);
+
+    // Isi form berkas
+    if (resBerkas.success && resBerkas.data) {
+      fillBerkasForm(resBerkas.data);
+    }
+
+    // Tampilkan/sembunyikan seksi RPL
+    const isRpl = currentCamaba.jenisKelas === "RPL";
+    document.getElementById("section-rpl").style.display =
+      isRpl ? "" : "none";
+
+    // Set camaba ID
+    document.getElementById("berkas-camaba-id").value = camabaId;
+
+    // Sembunyikan tombol simpan untuk read-only
+    document.getElementById("section-action").style.display =
+      isPMB() ? "" : "none";
+
+    // Switch view
+    document.getElementById("section-list").classList.add("hidden");
+    document.getElementById("section-detail").classList.remove("hidden");
+
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── Render Info Bar ───────────────────────────────────────────
+function renderInfoBar(c) {
+  document.getElementById("camaba-info-bar").innerHTML = `
+    <div>
+      <div class="camaba-info-name">${c.namaLengkap}</div>
+      <div class="camaba-info-meta">
+        ${c.id} &nbsp;|&nbsp;
+        ${c.programStudi} &nbsp;|&nbsp;
+        ${getKelasLabel(c.jenisKelas)} &nbsp;|&nbsp;
+        ${getGelombangLabel(c.gelombang)}
+      </div>
+    </div>
+    <div class="d-flex gap-1 align-center flex-wrap">
+      ${getStatusBadge(c.statusProses)}
+      ${getStatusBadge(c.statusBerkas)}
+      ${getStatusBadge(c.statusPembayaran)}
+    </div>
+  `;
+}
+
+// ── Fill Form ─────────────────────────────────────────────────
+function fillBerkasForm(b) {
+  setSelect("b-ijazah-fisik",    b.ijazahFisik);
+  setSelect("b-ijazah-digital",  b.ijazahDigital);
+  setSelect("b-ktp-fisik",       b.ktpFisik);
+  setSelect("b-ktp-digital",     b.ktpDigital);
+  setSelect("b-kk-fisik",        b.kkFisik);
+  setSelect("b-kk-digital",      b.kkDigital);
+  setSelect("b-foto-fisik",      b.fotoFisik);
+  setSelect("b-foto-digital",    b.fotoDigital);
+  setSelect("b-formulir-fisik",  b.formulirFisik);
+  setSelect("b-formulir-digital",b.formulirDigital);
+  setSelect("b-ada-sp",          b.adaSuratPernyataan);
+  setSelect("b-tipe-sp",         b.tipeSP);
+  setSelect("b-dok-rpl",         b.dokRpl);
+  setSelect("b-rek-konversi",    b.rekKonversi);
+
+  if (b.tglSP)   document.getElementById("b-tgl-sp").value   = b.tglSP;
+  if (b.batasSP) document.getElementById("b-batas-sp").value = b.batasSP;
+
+  // Update style semua select
+  document.querySelectorAll(".check-toggle select")
+          .forEach(updateCheckStyle);
+
+  // Update status badge
+  const badge = document.getElementById("status-badge-berkas");
+  if (badge) badge.innerHTML = getStatusBadge(b.statusBerkas);
+
+  // Banner lengkap
+  const bannerEl = document.getElementById("banner-lengkap");
+  if (b.statusBerkas === "LENGKAP") {
+    bannerEl.className = "banner-baak";
+    bannerEl.innerHTML = `
+      <span class="banner-baak-icon">✅</span>
+      <span>Berkas dinyatakan <strong>LENGKAP</strong>.
+      BAAK dapat menerbitkan NIM.</span>
+    `;
+    bannerEl.classList.remove("hidden");
+  } else {
+    bannerEl.classList.add("hidden");
+  }
+}
+
+// ── Simpan Berkas ─────────────────────────────────────────────
+async function simpanBerkas() {
+  const camabaId = document.getElementById("berkas-camaba-id").value;
+  if (!camabaId) return;
+
+  const data = {
+    ijazahFisik:         getVal("b-ijazah-fisik"),
+    ijazahDigital:       getVal("b-ijazah-digital"),
+    ktpFisik:            getVal("b-ktp-fisik"),
+    ktpDigital:          getVal("b-ktp-digital"),
+    kkFisik:             getVal("b-kk-fisik"),
+    kkDigital:           getVal("b-kk-digital"),
+    fotoFisik:           getVal("b-foto-fisik"),
+    fotoDigital:         getVal("b-foto-digital"),
+    formulirFisik:       getVal("b-formulir-fisik"),
+    formulirDigital:     getVal("b-formulir-digital"),
+    adaSuratPernyataan:  getVal("b-ada-sp"),
+    tipeSP:              getVal("b-tipe-sp"),
+    tglSP:               document.getElementById("b-tgl-sp").value,
+    batasSP:             document.getElementById("b-batas-sp").value,
+    dokRpl:              getVal("b-dok-rpl"),
+    rekKonversi:         getVal("b-rek-konversi"),
+  };
+
+  showLoading("Menyimpan checklist berkas...");
+  try {
+    const res = await Berkas.update(camabaId, data);
+    if (res.success) {
+      showSuccess("Checklist berkas berhasil disimpan!");
+
+      // Update badge status
+      const badge = document.getElementById("status-badge-berkas");
+      if (badge) badge.innerHTML = getStatusBadge(res.statusBerkas);
+
+      // Banner BAAK jika lengkap
+      const bannerEl = document.getElementById("banner-lengkap");
+      if (res.notifBaak) {
+        bannerEl.className = "banner-baak";
+        bannerEl.innerHTML = `
+          <span class="banner-baak-icon">✅</span>
+          <span>Berkas dinyatakan <strong>LENGKAP</strong>.
+          BAAK dapat menerbitkan NIM.</span>
+        `;
+        bannerEl.classList.remove("hidden");
+      }
+
+      // Reload list di background
+      Camaba.getAll().then(r => {
+        if (r.success) allCamabaList = r.data;
+      });
+
+    } else {
+      showError(res.message || "Gagal menyimpan.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── BAAK Notif ────────────────────────────────────────────────
+async function loadBaakNotif() {
+  if (!isAkademik()) return;
+  try {
+    const res = await Berkas.notifBaak();
+    if (res.success && res.count > 0) {
+      const banner = document.getElementById("banner-baak");
+      banner.className = "banner-baak";
+      banner.innerHTML = `
+        <span class="banner-baak-icon">🔔</span>
+        <span>Ada <strong>${res.count} camaba</strong>
+        dengan berkas LENGKAP yang menunggu penerbitan NIM.</span>
+        <a href="nim.html"
+           class="btn btn-sm"
+           style="background:rgba(255,255,255,0.2);
+                  color:white; margin-left:auto;">
+          Ke Halaman NIM →
+        </a>
+      `;
+      banner.classList.remove("hidden");
+    }
+  } catch (e) { /* silent */ }
+}
+
+// ── Filter ────────────────────────────────────────────────────
+function setupFilters() {
+  ["search-input","filter-status-berkas","filter-kelas"]
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener("input",  applyFilter);
+        el.addEventListener("change", applyFilter);
+      }
+    });
+}
+
+function applyFilter() {
+  const search = document.getElementById("search-input")
+                         .value.toLowerCase();
+  const status = document.getElementById("filter-status-berkas").value;
+  const kelas  = document.getElementById("filter-kelas").value;
+
+  const filtered = allCamabaList.filter(c => {
+    const matchSearch = !search ||
+      c.namaLengkap?.toLowerCase().includes(search) ||
+      c.id?.toLowerCase().includes(search);
+    const matchStatus = !status || c.statusBerkas === status;
+    const matchKelas  = !kelas  || c.jenisKelas   === kelas;
+    return matchSearch && matchStatus && matchKelas;
+  });
+
+  renderList(filtered);
+}
+
+function resetFilter() {
+  document.getElementById("search-input").value           = "";
+  document.getElementById("filter-status-berkas").value   = "";
+  document.getElementById("filter-kelas").value           = "";
+  renderList(allCamabaList);
+}
+
+function backToList() {
+  document.getElementById("section-detail").classList.add("hidden");
+  document.getElementById("section-list").classList.remove("hidden");
+  currentCamaba = null;
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function setSelect(id, value) {
+  const el = document.getElementById(id);
+  if (!el || !value) return;
+  el.value = value;
+  updateCheckStyle(el);
+}
+
+function getVal(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : "";
+}
+
+function updateCheckStyle(el) {
+  el.classList.remove("done", "missing");
+  if (el.value === "✓") el.classList.add("done");
+  if (el.value === "✗") el.classList.add("missing");
+}
+</script>
+
+</body>
+</html>
