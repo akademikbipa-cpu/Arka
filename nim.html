@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARKA — Rilis NIM</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .nim-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .nim-card-header {
+      padding: 14px 20px;
+      background: var(--purple);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nim-card-title { font-weight: 700; font-size: 0.9rem; }
+    .nim-card-body  { padding: 20px; }
+    .nim-display {
+      font-family: monospace;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--purple);
+      background: var(--purple-light);
+      padding: 16px 24px;
+      border-radius: var(--radius);
+      text-align: center;
+      letter-spacing: 4px;
+      margin: 12px 0;
+    }
+    .nim-format-hint {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .nim-format-hint span {
+      display: inline-block;
+      background: var(--gray-light);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      margin: 0 2px;
+    }
+    .camaba-info-bar {
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .camaba-info-name {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--primary);
+    }
+    .camaba-info-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .syarat-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+    .syarat-row:last-child { border-bottom: none; }
+    .syarat-icon { font-size: 1.1rem; width: 24px; text-align: center; }
+    .syarat-label { flex: 1; }
+    .syarat-status { font-weight: 600; font-size: 0.82rem; }
+    .syarat-ok    { color: var(--green); }
+    .syarat-fail  { color: var(--red); }
+    .override-box {
+      background: var(--yellow-light);
+      border: 2px solid #F0B429;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-top: 16px;
+    }
+    .override-box-title {
+      font-weight: 700;
+      color: var(--yellow);
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .override-box-desc {
+      font-size: 0.82rem;
+      color: var(--yellow);
+      margin-bottom: 14px;
+    }
+    .nim-released {
+      text-align: center;
+      padding: 20px;
+    }
+    .nim-released-icon { font-size: 3rem; margin-bottom: 8px; }
+    .nim-released-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--green);
+      margin-bottom: 8px;
+    }
+    .log-table th { font-size: 0.75rem; }
+    .log-table td { font-size: 0.82rem; }
+    .pending-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--purple-light);
+      color: var(--purple);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+  <div class="loading-text">Memuat...</div>
+</div>
+
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar">
+    <div class="sidebar-logo">
+      <div>
+        <div class="sidebar-logo-text">🎓 ARKA</div>
+        <div class="sidebar-logo-sub">SLA PMB STMIK Bina Patria</div>
+      </div>
+    </div>
+    <div class="sidebar-section">Menu</div>
+    <nav id="sidebar-menu"></nav>
+    <div class="sidebar-bottom">
+      <button id="btn-logout" class="sidebar-item w-100"
+        style="border:none;background:none;color:rgba(255,255,255,0.6);
+               font-size:0.875rem;cursor:pointer;text-align:left;">
+        🚪 Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-title">🪪 Rilis NIM Mahasiswa Baru</div>
+    <div class="header-right">
+      <span class="role-badge" id="user-role"></span>
+      <div class="user-avatar" id="user-avatar"></div>
+      <span class="user-name" id="user-name"></span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header d-flex justify-between align-center flex-wrap gap-1">
+      <div>
+        <div class="page-title">Rilis NIM</div>
+        <div class="page-subtitle">
+          BAAK: Input NIM Manual | PMB & Pimpinan: Read
+        </div>
+      </div>
+      <button class="btn btn-outline" onclick="loadNimList()">
+        🔄 Refresh
+      </button>
+    </div>
+
+    <!-- Banner pending NIM -->
+    <div id="banner-pending" class="hidden"></div>
+
+    <!-- Filter -->
+    <div class="card" style="padding:16px; margin-bottom:16px;">
+      <div class="filter-bar">
+        <input type="text" id="search-input" class="search-input"
+               placeholder="🔍 Cari nama, NIM..." />
+        <select id="filter-status" class="form-control"
+                style="width:auto; min-width:180px;">
+          <option value="">Semua Status</option>
+          <option value="pending">Menunggu NIM</option>
+          <option value="NIM RILIS">Sudah Rilis</option>
+        </select>
+        <select id="filter-prodi" class="form-control"
+                style="width:auto; min-width:180px;">
+          <option value="">Semua Prodi</option>
+          <option value="11">S1 Teknik Informatika</option>
+          <option value="22">D3 Manajemen Informatika</option>
+          <option value="33">S1 Sistem Informasi</option>
+        </select>
+        <select id="filter-kelas" class="form-control"
+                style="width:auto; min-width:140px;">
+          <option value="">Semua Kelas</option>
+          <option value="REG">Reguler</option>
+          <option value="PAR">Paralel</option>
+          <option value="FLEX">Flex Class</option>
+          <option value="RPL">RPL</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="resetFilter()">
+          ✕ Reset
+        </button>
+      </div>
+      <div style="font-size:0.78rem; color:var(--text-muted); margin-top:8px;">
+        Menampilkan <strong id="count-shown">0</strong> dari
+        <strong id="count-total">0</strong> data
+      </div>
+    </div>
+
+    <!-- Table List -->
+    <div class="card" style="padding:0;" id="section-list">
+      <div class="table-wrapper">
+        <table id="tbl-nim">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama Camaba</th>
+              <th>Prodi</th>
+              <th>Kelas</th>
+              <th>Status Berkas</th>
+              <th>Status Bayar</th>
+              <th>NIM</th>
+              <th>Tgl Rilis</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-nim">
+            <tr>
+              <td colspan="9" class="text-center text-muted"
+                  style="padding:32px;">
+                ⏳ Memuat data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Detail Rilis NIM -->
+    <div id="section-detail" class="hidden">
+
+      <button class="btn btn-outline mb-2" onclick="backToList()">
+        ← Kembali ke Daftar
+      </button>
+
+      <!-- Info Camaba -->
+      <div class="camaba-info-bar" id="camaba-info-bar"></div>
+
+      <input type="hidden" id="nim-camaba-id" />
+
+      <!-- Syarat Rilis NIM -->
+      <div class="nim-card">
+        <div class="nim-card-header">
+          <div class="nim-card-title">
+            ✅ Syarat Rilis NIM
+          </div>
+        </div>
+        <div class="nim-card-body">
+          <div id="syarat-list"></div>
+        </div>
+      </div>
+
+      <!-- Form Rilis NIM (tampil jika belum ada NIM) -->
+      <div id="section-form-nim">
+        <div class="nim-card">
+          <div class="nim-card-header">
+            <div class="nim-card-title">🪪 Input NIM Manual</div>
+          </div>
+          <div class="nim-card-body">
+
+            <!-- Format hint -->
+            <div class="nim-format-hint">
+              Format NIM:
+              <span>YY</span> Angkatan +
+              <span>KK</span> Kode Prodi +
+              <span>XXX</span> Urutan
+              &nbsp;→&nbsp; Contoh:
+              <span>2611001</span>
+            </div>
+
+            <!-- NIM Generator Helper -->
+            <div class="card"
+                 style="padding:14px; background:var(--gray-light);
+                        margin-bottom:16px;">
+              <div style="font-size:0.82rem; font-weight:600;
+                          color:var(--text-muted); margin-bottom:10px;">
+                🔧 Generator NIM Otomatis
+              </div>
+              <div class="form-grid">
+                <div class="form-group" style="margin-bottom:8px;">
+                  <label class="form-label">Tahun Angkatan</label>
+                  <input id="gen-tahun" type="text"
+                         class="form-control"
+                         value="26" maxlength="2"
+                         placeholder="26" />
+                </div>
+                <div class="form-group" style="margin-bottom:8px;">
+                  <label class="form-label">Nomor Urut</label>
+                  <input id="gen-urut" type="number"
+                         class="form-control"
+                         placeholder="001" min="1" max="999" />
+                </div>
+              </div>
+              <button type="button"
+                      class="btn btn-outline btn-sm"
+                      onclick="generateNimOtomatis()">
+                ⚡ Generate NIM
+              </button>
+            </div>
+
+            <!-- Input NIM -->
+            <div class="form-group">
+              <label class="form-label">
+                NIM <span class="required">*</span>
+              </label>
+              <input id="input-nim" type="text"
+                     class="form-control"
+                     placeholder="Contoh: 2611001"
+                     maxlength="7"
+                     style="font-family:monospace; font-size:1.2rem;
+                            letter-spacing:3px; text-align:center;"
+                     oninput="previewNim(this.value)" />
+              <div id="nim-preview" class="nim-display hidden"></div>
+              <div id="nim-error"
+                   class="form-error"></div>
+            </div>
+
+            <!-- Override Code (tampil jika berkas belum lengkap) -->
+            <div id="override-section" class="hidden">
+              <div class="override-box">
+                <div class="override-box-title">
+                  🔐 Override Code Diperlukan
+                </div>
+                <div class="override-box-desc">
+                  Berkas camaba belum lengkap. Diperlukan
+                  Override Code dari Wakil Ketua I untuk
+                  melanjutkan penerbitan NIM.
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Override Code</label>
+                  <input id="input-override" type="password"
+                         class="form-control"
+                         placeholder="Masukkan kode dari WK I" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Tombol Rilis -->
+            <div id="section-action-nim"
+                 class="d-flex gap-1 mt-2">
+              <button type="button"
+                      class="btn btn-success"
+                      onclick="rilisNim()">
+                🪪 Rilis NIM
+              </button>
+              <button type="button"
+                      class="btn btn-outline"
+                      onclick="backToList()">
+                Batal
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- NIM sudah dirilis -->
+      <div id="section-nim-released" class="hidden">
+        <div class="nim-card">
+          <div class="nim-card-header"
+               style="background:var(--green);">
+            <div class="nim-card-title">
+              ✅ NIM Sudah Dirilis
+            </div>
+          </div>
+          <div class="nim-card-body">
+            <div class="nim-released">
+              <div class="nim-released-icon">🎓</div>
+              <div class="nim-released-title">
+                NIM Berhasil Diterbitkan
+              </div>
+              <div id="nim-released-value"
+                   class="nim-display"></div>
+              <div id="nim-released-meta"
+                   style="font-size:0.82rem;
+                          color:var(--text-muted);
+                          margin-top:8px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Log NIM -->
+    <div class="card mt-3" id="section-log">
+      <div class="card-header">
+        <div class="card-title">📋 Log Rilis NIM</div>
+      </div>
+      <div class="table-wrapper">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>NIM</th>
+              <th>Nama Mahasiswa</th>
+              <th>Prodi</th>
+              <th>Kelas</th>
+              <th>Dirilis Oleh</th>
+              <th>Tgl Rilis</th>
+              <th>Override</th>
+              <th>Sinkron SIAKAD</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-log">
+            <tr>
+              <td colspan="9"
+                  class="text-center text-muted"
+                  style="padding:20px;">
+                Memuat log...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Scripts -->
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+
+let allCamabaList = [];
+let currentCamaba = null;
+
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  if (!initPage()) return;
+  loadNimList();
+
+  const params = new URLSearchParams(window.location.search);
+  const id     = params.get("id");
+  if (id) openDetail(id);
+});
+
+// ── Load List ─────────────────────────────────────────────────
+async function loadNimList() {
+  showLoading("Memuat data NIM...");
+  try {
+    const res = await Camaba.getAll();
+    if (!res.success) {
+      showError(res.message || "Gagal memuat data.");
+      return;
+    }
+    allCamabaList = res.data || [];
+
+    // Banner pending
+    const pending = allCamabaList.filter(c =>
+      c.statusBerkas === "LENGKAP" &&
+      c.statusProses  !== "NIM RILIS" &&
+      !c.nim
+    );
+    renderBannerPending(pending.length);
+    renderList(allCamabaList);
+    loadNimLog();
+
+    document.getElementById("count-total").textContent =
+      allCamabaList.length;
+    setupFilters();
+
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── Render Banner Pending ─────────────────────────────────────
+function renderBannerPending(count) {
+  const el = document.getElementById("banner-pending");
+  if (count > 0 && isAkademik()) {
+    el.className = "alert alert-info mb-2";
+    el.innerHTML = `
+      🔔 Ada <strong>${count} camaba</strong>
+      dengan berkas LENGKAP yang menunggu penerbitan NIM.
+    `;
+    el.classList.remove("hidden");
+  } else {
+    el.classList.add("hidden");
+  }
+}
+
+// ── Render List ───────────────────────────────────────────────
+function renderList(data) {
+  const tbody = document.getElementById("tbody-nim");
+  document.getElementById("count-shown").textContent = data.length;
+
+  if (!data.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9">
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <div class="empty-state-title">Tidak ada data</div>
+          </div>
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map((c, i) => {
+    const isPending = c.statusBerkas === "LENGKAP" &&
+                      c.statusProses  !== "NIM RILIS" &&
+                      !c.nim;
+    return `
+      <tr ${isPending ? 'style="background:var(--purple-light);"' : ""}>
+        <td>${i + 1}</td>
+        <td>
+          <strong>${c.namaLengkap}</strong>
+          <div style="font-size:0.75rem; color:var(--text-muted);">
+            ${c.id}
+          </div>
+        </td>
+        <td style="font-size:0.82rem;">${c.programStudi || "-"}</td>
+        <td>
+          <span class="badge badge-gray">
+            ${getKelasLabel(c.jenisKelas)}
+          </span>
+        </td>
+        <td>${getStatusBadge(c.statusBerkas)}</td>
+        <td>${getStatusBadge(c.statusPembayaran)}</td>
+        <td>
+          ${c.nim
+            ? `<span style="font-family:monospace; font-weight:700;
+                            color:var(--purple);">${c.nim}</span>`
+            : isPending
+              ? `<span class="pending-badge">⏳ Siap dirilis</span>`
+              : `<span class="text-muted" style="font-size:0.78rem;">
+                   Belum ada
+                 </span>`}
+        </td>
+        <td style="font-size:0.82rem;">
+          ${formatTanggal(c.tglNimRilis)}
+        </td>
+        <td>
+          ${isAkademik()
+            ? `<button class="btn btn-sm btn-${c.nim ? 'outline' : 'primary'}"
+                       onclick="openDetail('${c.id}')">
+                 ${c.nim ? "👁️ Lihat" : "🪪 Rilis NIM"}
+               </button>`
+            : `<button class="btn btn-sm btn-outline"
+                       onclick="openDetail('${c.id}')">
+                 👁️ Lihat
+               </button>`}
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+// ── Open Detail ───────────────────────────────────────────────
+async function openDetail(camabaId) {
+  showLoading("Memuat detail...");
+  try {
+    const res = await Camaba.getById(camabaId);
+    if (!res.success) {
+      showError("Data tidak ditemukan.");
+      return;
+    }
+    currentCamaba = res.data;
+
+    renderInfoBar(currentCamaba);
+    renderSyarat(currentCamaba);
+
+    document.getElementById("nim-camaba-id").value = camabaId;
+
+    // Sudah ada NIM
+    if (currentCamaba.nim) {
+      document.getElementById("section-form-nim")
+              .classList.add("hidden");
+      document.getElementById("section-nim-released")
+              .classList.remove("hidden");
+      document.getElementById("nim-released-value")
+              .textContent = currentCamaba.nim;
+      document.getElementById("nim-released-meta")
+              .textContent =
+        "Dirilis pada: " +
+        formatTanggal(currentCamaba.tglNimRilis);
+    } else {
+      document.getElementById("section-form-nim")
+              .classList.remove("hidden");
+      document.getElementById("section-nim-released")
+              .classList.add("hidden");
+
+      // Set kode prodi di generator
+      document.getElementById("gen-tahun").value = "26";
+
+      // Tampilkan override jika berkas belum lengkap
+      const needOverride =
+        currentCamaba.statusBerkas !== "LENGKAP";
+      document.getElementById("override-section")
+              .classList.toggle("hidden", !needOverride);
+
+      // Sembunyikan form rilis untuk non-akademik
+      document.getElementById("section-action-nim")
+              .style.display = isAkademik() ? "" : "none";
+    }
+
+    document.getElementById("section-list")
+            .classList.add("hidden");
+    document.getElementById("section-log")
+            .classList.add("hidden");
+    document.getElementById("section-detail")
+            .classList.remove("hidden");
+
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── Render Info Bar ───────────────────────────────────────────
+function renderInfoBar(c) {
+  document.getElementById("camaba-info-bar").innerHTML = `
+    <div>
+      <div class="camaba-info-name">${c.namaLengkap}</div>
+      <div class="camaba-info-meta">
+        ${c.id} &nbsp;|&nbsp;
+        ${c.programStudi} &nbsp;|&nbsp;
+        ${getKelasLabel(c.jenisKelas)} &nbsp;|&nbsp;
+        ${getGelombangLabel(c.gelombang)}
+      </div>
+    </div>
+    <div class="d-flex gap-1 align-center flex-wrap">
+      ${getStatusBadge(c.statusProses)}
+      ${getStatusBadge(c.statusBerkas)}
+      ${getStatusBadge(c.statusPembayaran)}
+    </div>
+  `;
+}
+
+// ── Render Syarat ─────────────────────────────────────────────
+function renderSyarat(c) {
+  const berkasOk = c.statusBerkas === "LENGKAP";
+  const bayarOk  = c.statusPembayaran === "LUNAS" ||
+                   c.statusPembayaran === "BAYAR SEBAGIAN";
+
+  document.getElementById("syarat-list").innerHTML = `
+    <div class="syarat-row">
+      <div class="syarat-icon">${berkasOk ? "✅" : "❌"}</div>
+      <div class="syarat-label">Berkas dinyatakan LENGKAP</div>
+      <div class="syarat-status ${berkasOk
+        ? "syarat-ok" : "syarat-fail"}">
+        ${berkasOk ? "Terpenuhi" : "Belum terpenuhi"}
+      </div>
+    </div>
+    <div class="syarat-row">
+      <div class="syarat-icon">${bayarOk ? "✅" : "❌"}</div>
+      <div class="syarat-label">Pembayaran minimal sudah masuk</div>
+      <div class="syarat-status ${bayarOk
+        ? "syarat-ok" : "syarat-fail"}">
+        ${bayarOk
+          ? c.statusPembayaran
+          : "Belum ada pembayaran"}
+      </div>
+    </div>
+    ${c.jenisKelas === "RPL" ? `
+    <div class="syarat-row">
+      <div class="syarat-icon">📋</div>
+      <div class="syarat-label">
+        Dokumen Rekomendasi Konversi dari Kaprodi
+      </div>
+      <div class="syarat-status"
+           style="color:var(--text-muted);">
+        Cek di tab Berkas
+      </div>
+    </div>` : ""}
+    ${!berkasOk ? `
+    <div class="alert alert-warning mt-1">
+      ⚠️ Berkas belum lengkap. Penerbitan NIM memerlukan
+      <strong>Override Code dari WK I</strong>.
+    </div>` : ""}
+  `;
+}
+
+// ── Generate NIM Otomatis ─────────────────────────────────────
+function generateNimOtomatis() {
+  if (!currentCamaba) return;
+
+  const tahun    = document.getElementById("gen-tahun").value || "26";
+  const kodeProdi = currentCamaba.kodeProdi || "11";
+  const urut     = document.getElementById("gen-urut").value;
+
+  if (!urut) {
+    showWarning("Masukkan nomor urut terlebih dahulu.");
+    return;
+  }
+
+  const nim = tahun + kodeProdi +
+              String(urut).padStart(3, "0");
+  document.getElementById("input-nim").value = nim;
+  previewNim(nim);
+}
+
+// ── Preview NIM ───────────────────────────────────────────────
+function previewNim(val) {
+  const preview = document.getElementById("nim-preview");
+  const errEl   = document.getElementById("nim-error");
+
+  if (!val) {
+    preview.classList.add("hidden");
+    errEl.style.display = "none";
+    return;
+  }
+
+  preview.classList.remove("hidden");
+  preview.textContent = val;
+
+  // Validasi format
+  if (!/^\d{7}$/.test(val)) {
+    errEl.textContent   = "Format NIM harus 7 digit angka.";
+    errEl.style.display = "block";
+    preview.style.color = "var(--red)";
+  } else {
+    errEl.style.display = "none";
+    preview.style.color = "var(--purple)";
+  }
+}
+
+// ── Rilis NIM ─────────────────────────────────────────────────
+async function rilisNim() {
+  const camabaId    = document.getElementById("nim-camaba-id").value;
+  const nim         = document.getElementById("input-nim").value.trim();
+  const overrideCode = document.getElementById("input-override").value;
+
+  if (!nim) {
+    showError("NIM wajib diisi.");
+    return;
+  }
+
+  if (!/^\d{7}$/.test(nim)) {
+    showError("Format NIM tidak valid. Harus 7 digit angka.");
+    return;
+  }
+
+  if (!confirmDialog(
+    `Rilis NIM "${nim}" untuk ${currentCamaba.namaLengkap}?\n\n` +
+    `Pastikan NIM sudah benar karena tidak bisa diubah setelah dirilis.`
+  )) return;
+
+  showLoading("Merilis NIM...");
+  try {
+    const res = await Nim.release(camabaId, nim, overrideCode);
+
+    if (res.success) {
+      showSuccess("NIM " + nim + " berhasil dirilis!");
+
+      // Tampilkan section released
+      document.getElementById("section-form-nim")
+              .classList.add("hidden");
+      document.getElementById("section-nim-released")
+              .classList.remove("hidden");
+      document.getElementById("nim-released-value")
+              .textContent = nim;
+      document.getElementById("nim-released-meta")
+              .textContent = "Dirilis hari ini";
+
+      // Reload list
+      await loadNimList();
+
+    } else if (res.requireOverride) {
+      document.getElementById("override-section")
+              .classList.remove("hidden");
+      showWarning(res.message);
+
+    } else {
+      showError(res.message || "Gagal merilis NIM.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── Load NIM Log ──────────────────────────────────────────────
+async function loadNimLog() {
+  try {
+    const res = await Nim.getList();
+    if (!res.success) return;
+
+    const tbody = document.getElementById("tbody-log");
+    const data  = res.data || [];
+
+    if (!data.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" class="text-center text-muted"
+              style="padding:20px;">
+            Belum ada log rilis NIM
+          </td>
+        </tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.map((r, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>
+          <span style="font-family:monospace; font-weight:700;
+                       color:var(--purple);">
+            ${r.nim || "-"}
+          </span>
+        </td>
+        <td><strong>${r.namaMahasiswa || "-"}</strong></td>
+        <td style="font-size:0.8rem;">${r.prodi || "-"}</td>
+        <td>
+          <span class="badge badge-gray">
+            ${getKelasLabel(r.kelas)}
+          </span>
+        </td>
+        <td>${r.inputOleh || "-"}</td>
+        <td>${formatTanggal(r.tglRilis)}</td>
+        <td>
+          ${r.isOverride === "YA"
+            ? `<span class="badge badge-yellow">Override</span>`
+            : `<span class="badge badge-green">Normal</span>`}
+        </td>
+        <td>
+          ${r.sinkronSiakad === "YA"
+            ? `<span class="badge badge-green">✓ Sinkron</span>`
+            : `<span class="badge badge-gray">Belum</span>`}
+        </td>
+      </tr>
+    `).join("");
+
+  } catch (e) { /* silent */ }
+}
+
+// ── Filter ────────────────────────────────────────────────────
+function setupFilters() {
+  ["search-input","filter-status",
+   "filter-prodi","filter-kelas"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("input",  applyFilter);
+      el.addEventListener("change", applyFilter);
+    }
+  });
+}
+
+function applyFilter() {
+  const search = document.getElementById("search-input")
+                         .value.toLowerCase();
+  const status = document.getElementById("filter-status").value;
+  const prodi  = document.getElementById("filter-prodi").value;
+  const kelas  = document.getElementById("filter-kelas").value;
+
+  const filtered = allCamabaList.filter(c => {
+    const matchSearch = !search ||
+      c.namaLengkap?.toLowerCase().includes(search) ||
+      c.nim?.toLowerCase().includes(search) ||
+      c.id?.toLowerCase().includes(search);
+
+    const isPending = c.statusBerkas === "LENGKAP" &&
+                      c.statusProses  !== "NIM RILIS" &&
+                      !c.nim;
+
+    const matchStatus = !status ||
+      (status === "pending" && isPending) ||
+      (status === "NIM RILIS" && c.statusProses === "NIM RILIS");
+
+    const matchProdi = !prodi || c.kodeProdi  === prodi;
+    const matchKelas = !kelas || c.jenisKelas === kelas;
+
+    return matchSearch && matchStatus && matchProdi && matchKelas;
+  });
+
+  renderList(filtered);
+}
+
+function resetFilter() {
+  ["search-input","filter-status",
+   "filter-prodi","filter-kelas"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  renderList(allCamabaList);
+}
+
+function backToList() {
+  document.getElementById("section-detail")
+          .classList.add("hidden");
+  document.getElementById("section-list")
+          .classList.remove("hidden");
+  document.getElementById("section-log")
+          .classList.remove("hidden");
+  currentCamaba = null;
+  document.getElementById("input-nim").value      = "";
+  document.getElementById("input-override").value = "";
+  document.getElementById("nim-preview")
+          .classList.add("hidden");
+}
+</script>
+
+</body>
+</html>
