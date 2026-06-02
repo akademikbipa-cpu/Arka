@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARKA — Data Camaba</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .table-actions { display: flex; gap: 6px; }
+    .nim-badge {
+      font-family: monospace;
+      font-weight: 700;
+      color: var(--purple);
+      background: var(--purple-light);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+    }
+    .no-nim {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-style: italic;
+    }
+    .detail-section {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-section:last-child { border-bottom: none; }
+    .detail-section-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 20px;
+    }
+    .detail-item label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 2px;
+    }
+    .detail-item span {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      padding: 8px 18px;
+      border: none;
+      background: none;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: var(--transition);
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .form-section-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--white);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: var(--primary);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      margin: 16px 0 12px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+  <div class="loading-text">Memuat...</div>
+</div>
+
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar">
+    <div class="sidebar-logo">
+      <div>
+        <div class="sidebar-logo-text">🎓 ARKA</div>
+        <div class="sidebar-logo-sub">SLA PMB STMIK Bina Patria</div>
+      </div>
+    </div>
+    <div class="sidebar-section">Menu</div>
+    <nav id="sidebar-menu"></nav>
+    <div class="sidebar-bottom">
+      <button id="btn-logout" class="sidebar-item w-100"
+        style="border:none;background:none;color:rgba(255,255,255,0.6);
+               font-size:0.875rem;cursor:pointer;text-align:left;">
+        🚪 Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-title">📋 Data Calon Mahasiswa Baru</div>
+    <div class="header-right">
+      <span class="role-badge" id="user-role"></span>
+      <div class="user-avatar" id="user-avatar"></div>
+      <span class="user-name" id="user-name"></span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header d-flex justify-between align-center flex-wrap gap-1">
+      <div>
+        <div class="page-title">Data Calon Mahasiswa Baru</div>
+        <div class="page-subtitle">
+          Kelola data pendaftar — PMB: CRU | Keuangan & BAAK: Read
+        </div>
+      </div>
+      <div class="d-flex gap-1">
+        <button class="btn btn-outline" onclick="loadCamaba()">
+          🔄 Refresh
+        </button>
+        <button class="btn btn-primary" id="btn-tambah"
+                onclick="openModalTambah()">
+          ➕ Tambah Camaba
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card" style="padding:16px; margin-bottom:16px;">
+      <div class="filter-bar">
+        <input type="text" id="search-input" class="search-input"
+               placeholder="🔍 Cari nama, NIM, no. pendaftaran..." />
+        <select id="filter-prodi" class="form-control"
+                style="width:auto; min-width:180px;">
+          <option value="">Semua Prodi</option>
+          <option value="11">S1 Teknik Informatika</option>
+          <option value="22">D3 Manajemen Informatika</option>
+          <option value="33">S1 Sistem Informasi</option>
+        </select>
+        <select id="filter-kelas" class="form-control"
+                style="width:auto; min-width:140px;">
+          <option value="">Semua Kelas</option>
+          <option value="REG">Reguler</option>
+          <option value="PAR">Paralel</option>
+          <option value="FLEX">Flex Class</option>
+          <option value="RPL">RPL</option>
+        </select>
+        <select id="filter-gelombang" class="form-control"
+                style="width:auto; min-width:140px;">
+          <option value="">Semua Gelombang</option>
+          <option value="GEL-2026-1">Gelombang 1</option>
+          <option value="GEL-2026-2">Gelombang 2</option>
+          <option value="GEL-2026-3">Gelombang 3</option>
+        </select>
+        <select id="filter-status" class="form-control"
+                style="width:auto; min-width:150px;">
+          <option value="">Semua Status</option>
+          <option value="DAFTAR">Daftar</option>
+          <option value="PEMBERKASAN">Pemberkasan</option>
+          <option value="VERIFIKASI">Verifikasi</option>
+          <option value="LENGKAP">Lengkap</option>
+          <option value="NIM RILIS">NIM Rilis</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="resetFilter()">
+          ✕ Reset
+        </button>
+      </div>
+      <div style="font-size:0.78rem; color:var(--text-muted); margin-top:8px;">
+        Menampilkan <strong id="count-shown">0</strong> dari
+        <strong id="count-total">0</strong> data
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card" style="padding:0;">
+      <div class="table-wrapper">
+        <table id="tbl-camaba">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>No. Daftar</th>
+              <th>Nama Lengkap</th>
+              <th>Prodi</th>
+              <th>Kelas</th>
+              <th>Gelombang</th>
+              <th>Beasiswa</th>
+              <th>Status Proses</th>
+              <th>Status Berkas</th>
+              <th>Status Bayar</th>
+              <th>NIM</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-camaba">
+            <tr>
+              <td colspan="12" class="text-center text-muted"
+                  style="padding:32px;">
+                ⏳ Memuat data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════ MODAL TAMBAH / EDIT ══════════════ -->
+<div class="modal-overlay" id="modal-form">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-form-title">
+        ➕ Tambah Calon Mahasiswa Baru
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-form')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Tabs -->
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('tab-identitas', this)">
+          👤 Identitas
+        </button>
+        <button class="tab-btn" onclick="switchTab('tab-pendaftaran', this)">
+          📋 Pendaftaran
+        </button>
+        <button class="tab-btn" onclick="switchTab('tab-sekolah', this)">
+          🏫 Asal Sekolah
+        </button>
+      </div>
+
+      <input type="hidden" id="form-id" />
+
+      <!-- Tab: Identitas -->
+      <div class="tab-content active" id="tab-identitas">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">
+              Nama Lengkap <span class="required">*</span>
+            </label>
+            <input id="f-nama" type="text" class="form-control"
+                   placeholder="Nama sesuai ijazah" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">NIK</label>
+            <input id="f-nik" type="text" class="form-control"
+                   placeholder="16 digit NIK" maxlength="16" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tempat Lahir</label>
+            <input id="f-tempat-lahir" type="text" class="form-control"
+                   placeholder="Kota tempat lahir" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tanggal Lahir</label>
+            <input id="f-tgl-lahir" type="date" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Jenis Kelamin</label>
+            <select id="f-jk" class="form-control">
+              <option value="">-- Pilih --</option>
+              <option value="L">Laki-laki</option>
+              <option value="P">Perempuan</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">No. Pendaftaran SIAKAD</label>
+            <input id="f-no-daftar" type="text" class="form-control"
+                   placeholder="Dari sistem SIAKAD" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Pendaftaran -->
+      <div class="tab-content" id="tab-pendaftaran">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">
+              Program Studi <span class="required">*</span>
+            </label>
+            <select id="f-prodi" class="form-control"
+                    onchange="syncKodeProdi()">
+              <option value="">-- Pilih Prodi --</option>
+              <option value="S1 Teknik Informatika">
+                S1 Teknik Informatika
+              </option>
+              <option value="D3 Manajemen Informatika">
+                D3 Manajemen Informatika
+              </option>
+              <option value="S1 Sistem Informasi">
+                S1 Sistem Informasi
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kode Prodi</label>
+            <input id="f-kode-prodi" type="text" class="form-control"
+                   readonly placeholder="Otomatis terisi" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">
+              Jenis Kelas <span class="required">*</span>
+            </label>
+            <select id="f-kelas" class="form-control">
+              <option value="">-- Pilih Kelas --</option>
+              <option value="REG">Reguler</option>
+              <option value="PAR">Paralel (Karyawan)</option>
+              <option value="FLEX">Flex Class</option>
+              <option value="RPL">RPL</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">
+              Gelombang <span class="required">*</span>
+            </label>
+            <select id="f-gelombang" class="form-control">
+              <option value="">-- Pilih Gelombang --</option>
+              <option value="GEL-2026-1">Gelombang 1</option>
+              <option value="GEL-2026-2">Gelombang 2</option>
+              <option value="GEL-2026-3">Gelombang 3</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tahun Akademik</label>
+            <input id="f-ta" type="text" class="form-control"
+                   value="2026/2027" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Beasiswa</label>
+            <select id="f-beasiswa" class="form-control">
+              <option value="Tidak Ada">Tidak Ada</option>
+              <option value="Beasiswa Nusantara">Beasiswa Nusantara</option>
+              <option value="Beasiswa Harapan Magelang">
+                Beasiswa Harapan Magelang
+              </option>
+              <option value="KIPK">KIPK</option>
+              <option value="KIPK Aspirasi">KIPK Aspirasi</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catatan Berkas</label>
+          <textarea id="f-catatan-berkas" class="form-control" rows="2"
+                    placeholder="Catatan kelengkapan berkas..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catatan Pembayaran</label>
+          <textarea id="f-catatan-bayar" class="form-control" rows="2"
+                    placeholder="Catatan pembayaran..."></textarea>
+        </div>
+      </div>
+
+      <!-- Tab: Sekolah -->
+      <div class="tab-content" id="tab-sekolah">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Asal Sekolah</label>
+            <input id="f-sekolah" type="text" class="form-control"
+                   placeholder="Nama SMA/SMK/MA/Sederajat" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Jurusan Sekolah</label>
+            <input id="f-jurusan" type="text" class="form-control"
+                   placeholder="IPA / IPS / TKJ / dll" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tahun Lulus</label>
+            <input id="f-tahun-lulus" type="number" class="form-control"
+                   placeholder="2024" min="2000" max="2030" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline"
+              onclick="closeModal('modal-form')">Batal</button>
+      <button class="btn btn-primary" id="btn-simpan"
+              onclick="simpanCamaba()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL DETAIL ══════════════ -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">📋 Detail Camaba</div>
+      <button class="modal-close"
+              onclick="closeModal('modal-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-detail-body">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline"
+              onclick="closeModal('modal-detail')">Tutup</button>
+      <button class="btn btn-primary" id="btn-edit-from-detail"
+              onclick="editFromDetail()">✏️ Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+
+let allCamaba    = [];
+let currentEditId = null;
+
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  if (!initPage()) return;
+
+  // Sembunyikan tombol tambah untuk role non-PMB
+  if (!isPMB()) {
+    const btn = document.getElementById("btn-tambah");
+    if (btn) btn.style.display = "none";
+  }
+
+  loadCamaba();
+  setupFilters();
+});
+
+// ── Load Data ─────────────────────────────────────────────────
+async function loadCamaba() {
+  showLoading("Memuat data camaba...");
+  try {
+    const res = await Camaba.getAll();
+    if (!res.success) {
+      showError(res.message || "Gagal memuat data.");
+      renderTable([]);
+      return;
+    }
+    allCamaba = res.data || [];
+    renderTable(allCamaba);
+    document.getElementById("count-total").textContent = allCamaba.length;
+  } catch (e) {
+    showError("Terjadi kesalahan saat memuat data.");
+    renderTable([]);
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── Render Table ──────────────────────────────────────────────
+function renderTable(data) {
+  const tbody = document.getElementById("tbody-camaba");
+  document.getElementById("count-shown").textContent = data.length;
+
+  if (!data.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="12">
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <div class="empty-state-title">Belum ada data camaba</div>
+            <div class="empty-state-desc">
+              Klik "Tambah Camaba" untuk menambahkan data baru
+            </div>
+          </div>
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map((c, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>
+        <span style="font-family:monospace; font-size:0.82rem;">
+          ${c.noPendaftaranSiakad || "-"}
+        </span>
+      </td>
+      <td>
+        <strong>${c.namaLengkap}</strong>
+        <div style="font-size:0.75rem; color:var(--text-muted);">
+          ${c.id}
+        </div>
+      </td>
+      <td>
+        <div style="font-size:0.82rem;">${c.programStudi || "-"}</div>
+      </td>
+      <td>
+        <span class="badge badge-gray">
+          ${getKelasLabel(c.jenisKelas)}
+        </span>
+      </td>
+      <td>
+        <span style="font-size:0.82rem;">
+          ${getGelombangLabel(c.gelombang)}
+        </span>
+      </td>
+      <td>
+        <span style="font-size:0.78rem; color:var(--text-muted);">
+          ${c.beasiswa || "Tidak Ada"}
+        </span>
+      </td>
+      <td>${getStatusBadge(c.statusProses)}</td>
+      <td>${getStatusBadge(c.statusBerkas)}</td>
+      <td>${getStatusBadge(c.statusPembayaran)}</td>
+      <td>
+        ${c.nim
+          ? `<span class="nim-badge">${c.nim}</span>`
+          : `<span class="no-nim">Belum ada</span>`}
+      </td>
+      <td>
+        <div class="table-actions">
+          <button class="btn btn-sm btn-outline"
+                  onclick="lihatDetail('${c.id}')"
+                  title="Lihat Detail">👁️</button>
+          ${isPMB() ? `
+          <button class="btn btn-sm btn-primary"
+                  onclick="openModalEdit('${c.id}')"
+                  title="Edit">✏️</button>
+          ` : ""}
+          ${isAdmin() ? `
+          <button class="btn btn-sm btn-danger"
+                  onclick="hapusCamaba('${c.id}', '${c.namaLengkap}')"
+                  title="Hapus">🗑️</button>
+          ` : ""}
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+// ── Filter ────────────────────────────────────────────────────
+function setupFilters() {
+  const ids = [
+    "search-input","filter-prodi",
+    "filter-kelas","filter-gelombang","filter-status"
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", applyFilter);
+    if (el) el.addEventListener("change", applyFilter);
+  });
+}
+
+function applyFilter() {
+  const search    = document.getElementById("search-input").value.toLowerCase();
+  const prodi     = document.getElementById("filter-prodi").value;
+  const kelas     = document.getElementById("filter-kelas").value;
+  const gelombang = document.getElementById("filter-gelombang").value;
+  const status    = document.getElementById("filter-status").value;
+
+  const filtered = allCamaba.filter(c => {
+    const matchSearch = !search ||
+      c.namaLengkap?.toLowerCase().includes(search) ||
+      c.nim?.toLowerCase().includes(search) ||
+      c.noPendaftaranSiakad?.toLowerCase().includes(search) ||
+      c.id?.toLowerCase().includes(search);
+
+    const matchProdi     = !prodi     || c.kodeProdi   === prodi;
+    const matchKelas     = !kelas     || c.jenisKelas  === kelas;
+    const matchGelombang = !gelombang || c.gelombang   === gelombang;
+    const matchStatus    = !status    || c.statusProses === status;
+
+    return matchSearch && matchProdi && matchKelas &&
+           matchGelombang && matchStatus;
+  });
+
+  renderTable(filtered);
+}
+
+function resetFilter() {
+  document.getElementById("search-input").value    = "";
+  document.getElementById("filter-prodi").value    = "";
+  document.getElementById("filter-kelas").value    = "";
+  document.getElementById("filter-gelombang").value = "";
+  document.getElementById("filter-status").value   = "";
+  renderTable(allCamaba);
+}
+
+// ── Modal Tambah ──────────────────────────────────────────────
+function openModalTambah() {
+  currentEditId = null;
+  document.getElementById("modal-form-title").textContent =
+    "➕ Tambah Calon Mahasiswa Baru";
+  resetForm();
+  openModal("modal-form");
+  switchTab("tab-identitas",
+    document.querySelector(".tab-btn"));
+}
+
+// ── Modal Edit ────────────────────────────────────────────────
+function openModalEdit(id) {
+  const c = allCamaba.find(x => x.id === id);
+  if (!c) return;
+
+  currentEditId = id;
+  document.getElementById("modal-form-title").textContent =
+    "✏️ Edit Data: " + c.namaLengkap;
+
+  // Isi form
+  document.getElementById("form-id").value           = c.id;
+  document.getElementById("f-nama").value            = c.namaLengkap       || "";
+  document.getElementById("f-nik").value             = c.nik               || "";
+  document.getElementById("f-tempat-lahir").value    = c.tempatLahir       || "";
+  document.getElementById("f-tgl-lahir").value       = c.tglLahir          || "";
+  document.getElementById("f-jk").value              = c.jenisKelamin      || "";
+  document.getElementById("f-no-daftar").value       = c.noPendaftaranSiakad || "";
+  document.getElementById("f-prodi").value           = c.programStudi      || "";
+  document.getElementById("f-kode-prodi").value      = c.kodeProdi         || "";
+  document.getElementById("f-kelas").value           = c.jenisKelas        || "";
+  document.getElementById("f-gelombang").value       = c.gelombang         || "";
+  document.getElementById("f-ta").value              = c.tahunAkademik     || "2026/2027";
+  document.getElementById("f-beasiswa").value        = c.beasiswa          || "Tidak Ada";
+  document.getElementById("f-catatan-berkas").value  = c.catatanBerkas     || "";
+  document.getElementById("f-catatan-bayar").value   = c.catatanPembayaran || "";
+  document.getElementById("f-sekolah").value         = c.asalSekolah       || "";
+  document.getElementById("f-jurusan").value         = c.jurusanSekolah    || "";
+  document.getElementById("f-tahun-lulus").value     = c.tahunLulus        || "";
+
+  openModal("modal-form");
+}
+
+// ── Simpan Camaba ─────────────────────────────────────────────
+async function simpanCamaba() {
+  const nama = document.getElementById("f-nama").value.trim();
+  const prodi = document.getElementById("f-prodi").value;
+  const kelas = document.getElementById("f-kelas").value;
+  const gelombang = document.getElementById("f-gelombang").value;
+
+  if (!nama) {
+    showError("Nama lengkap wajib diisi.");
+    switchTab("tab-identitas",
+      document.querySelectorAll(".tab-btn")[0]);
+    return;
+  }
+  if (!prodi || !kelas || !gelombang) {
+    showError("Program studi, jenis kelas, dan gelombang wajib diisi.");
+    switchTab("tab-pendaftaran",
+      document.querySelectorAll(".tab-btn")[1]);
+    return;
+  }
+
+  const data = {
+    namaLengkap:          nama,
+    nik:                  document.getElementById("f-nik").value.trim(),
+    tempatLahir:          document.getElementById("f-tempat-lahir").value.trim(),
+    tglLahir:             document.getElementById("f-tgl-lahir").value,
+    jenisKelamin:         document.getElementById("f-jk").value,
+    noPendaftaranSiakad:  document.getElementById("f-no-daftar").value.trim(),
+    programStudi:         prodi,
+    kodeProdi:            document.getElementById("f-kode-prodi").value,
+    jenisKelas:           kelas,
+    gelombang:            gelombang,
+    tahunAkademik:        document.getElementById("f-ta").value,
+    beasiswa:             document.getElementById("f-beasiswa").value,
+    catatanBerkas:        document.getElementById("f-catatan-berkas").value,
+    catatanPembayaran:    document.getElementById("f-catatan-bayar").value,
+    asalSekolah:          document.getElementById("f-sekolah").value.trim(),
+    jurusanSekolah:       document.getElementById("f-jurusan").value.trim(),
+    tahunLulus:           document.getElementById("f-tahun-lulus").value,
+  };
+
+  const btn = document.getElementById("btn-simpan");
+  btn.disabled    = true;
+  btn.textContent = "Menyimpan...";
+  showLoading("Menyimpan data...");
+
+  try {
+    let res;
+    if (currentEditId) {
+      res = await Camaba.update(currentEditId, data);
+    } else {
+      res = await Camaba.add(data);
+    }
+
+    if (res.success) {
+      showSuccess(currentEditId
+        ? "Data berhasil diupdate!"
+        : "Camaba berhasil ditambahkan!");
+      closeModal("modal-form");
+      await loadCamaba();
+    } else {
+      showError(res.message || "Gagal menyimpan data.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = "💾 Simpan";
+    hideLoading();
+  }
+}
+
+// ── Hapus Camaba ──────────────────────────────────────────────
+async function hapusCamaba(id, nama) {
+  if (!confirmDialog(`Hapus data "${nama}"? Tindakan ini tidak bisa dibatalkan.`))
+    return;
+
+  showLoading("Menghapus data...");
+  try {
+    const res = await Camaba.delete(id);
+    if (res.success) {
+      showSuccess("Data berhasil dihapus.");
+      await loadCamaba();
+    } else {
+      showError(res.message || "Gagal menghapus data.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── Lihat Detail ──────────────────────────────────────────────
+function lihatDetail(id) {
+  const c = allCamaba.find(x => x.id === id);
+  if (!c) return;
+
+  currentEditId = id;
+
+  document.getElementById("modal-detail-body").innerHTML = `
+    <div class="detail-section">
+      <div class="detail-section-title">📌 Identitas</div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>ID Camaba</label>
+          <span>${c.id}</span>
+        </div>
+        <div class="detail-item">
+          <label>No. Pendaftaran SIAKAD</label>
+          <span>${c.noPendaftaranSiakad || "-"}</span>
+        </div>
+        <div class="detail-item">
+          <label>Nama Lengkap</label>
+          <span><strong>${c.namaLengkap}</strong></span>
+        </div>
+        <div class="detail-item">
+          <label>NIK</label>
+          <span>${c.nik || "-"}</span>
+        </div>
+        <div class="detail-item">
+          <label>Tempat, Tgl Lahir</label>
+          <span>${c.tempatLahir || "-"}, ${formatTanggal(c.tglLahir)}</span>
+        </div>
+        <div class="detail-item">
+          <label>Jenis Kelamin</label>
+          <span>${c.jenisKelamin === "L" ? "Laki-laki" : c.jenisKelamin === "P" ? "Perempuan" : "-"}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">📋 Data Pendaftaran</div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>Program Studi</label>
+          <span>${c.programStudi || "-"}</span>
+        </div>
+        <div class="detail-item">
+          <label>Jenis Kelas</label>
+          <span>${getKelasLabel(c.jenisKelas)}</span>
+        </div>
+        <div class="detail-item">
+          <label>Gelombang</label>
+          <span>${getGelombangLabel(c.gelombang)}</span>
+        </div>
+        <div class="detail-item">
+          <label>Tahun Akademik</label>
+          <span>${c.tahunAkademik || "-"}</span>
+        </div>
+        <div class="detail-item">
+          <label>Beasiswa</label>
+          <span>${c.beasiswa || "Tidak Ada"}</span>
+        </div>
+        <div class="detail-item">
+          <label>NIM</label>
+          <span>${c.nim
+            ? `<span class="nim-badge">${c.nim}</span>`
+            : "<em>Belum ada</em>"}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">📊 Status</div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>Status Proses</label>
+          <span>${getStatusBadge(c.statusProses)}</span>
+        </div>
+        <div class="detail-item">
+          <label>Status Berkas</label>
+          <span>${getStatusBadge(c.statusBerkas)}</span>
+        </div>
+        <div class="detail-item">
+          <label>Status Pembayaran</label>
+          <span>${getStatusBadge(c.statusPembayaran)}</span>
+        </div>
+        <div class="detail-item">
+          <label>Lokasi Fisik Berkas</label>
+          <span>${c.lokasiFisisBerkas || "-"}</span>
+        </div>
+      </div>
+      ${c.catatanBerkas ? `
+        <div class="detail-item" style="margin-top:10px;">
+          <label>Catatan Berkas</label>
+          <span>${c.catatanBerkas}</span>
+        </div>` : ""}
+      ${c.catatanPembayaran ? `
+        <div class="detail-item" style="margin-top:10px;">
+          <label>Catatan Pembayaran</label>
+          <span>${c.catatanPembayaran}</span>
+        </div>` : ""}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">🏫 Asal Sekolah</div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>Nama Sekolah</label>
+          <span>${c.asalSekolah || "-"}</span>
+        </div>
+        <div class="detail-item">
+          <label>Jurusan</label>
+          <span>${c.jurusanSekolah || "-"}</span>
+        </div>
+        <div class="detail-item">
+          <label>Tahun Lulus</label>
+          <span>${c.tahunLulus || "-"}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">🕒 Metadata</div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>Dibuat Oleh</label>
+          <span>${c.dibuatOleh || "-"}</span>
+        </div>
+        <div class="detail-item">
+          <label>Tanggal Input</label>
+          <span>${formatTanggal(c.tglInput)}</span>
+        </div>
+        <div class="detail-item">
+          <label>Terakhir Update</label>
+          <span>${formatTanggal(c.tglUpdate)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Sembunyikan tombol edit untuk read-only role
+  const btnEdit = document.getElementById("btn-edit-from-detail");
+  if (btnEdit) btnEdit.style.display = isPMB() ? "" : "none";
+
+  openModal("modal-detail");
+}
+
+function editFromDetail() {
+  closeModal("modal-detail");
+  setTimeout(() => openModalEdit(currentEditId), 200);
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function syncKodeProdi() {
+  const map = {
+    "S1 Teknik Informatika":    "11",
+    "D3 Manajemen Informatika": "22",
+    "S1 Sistem Informasi":      "33",
+  };
+  const prodi = document.getElementById("f-prodi").value;
+  document.getElementById("f-kode-prodi").value = map[prodi] || "";
+}
+
+function resetForm() {
+  const ids = [
+    "form-id","f-nama","f-nik","f-tempat-lahir","f-tgl-lahir",
+    "f-no-daftar","f-kode-prodi","f-sekolah","f-jurusan",
+    "f-tahun-lulus","f-catatan-berkas","f-catatan-bayar",
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  document.getElementById("f-jk").value       = "";
+  document.getElementById("f-prodi").value    = "";
+  document.getElementById("f-kelas").value    = "";
+  document.getElementById("f-gelombang").value = "";
+  document.getElementById("f-ta").value       = "2026/2027";
+  document.getElementById("f-beasiswa").value = "Tidak Ada";
+}
+
+function switchTab(tabId, btn) {
+  document.querySelectorAll(".tab-content")
+    .forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab-btn")
+    .forEach(b => b.classList.remove("active"));
+  document.getElementById(tabId).classList.add("active");
+  if (btn) btn.classList.add("active");
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add("show");
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove("show");
+}
+</script>
+
+</body>
+</html>
