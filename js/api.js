@@ -1,34 +1,49 @@
 // ============================================================
-// js/api.js — Core API Caller ke GAS Backend
+// js/api.js — Core API Caller ke GAS Backend (JSONP)
 // ============================================================
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwzpaSi-8JkT5SC3qRVCdp-kUP777W5SKl8qXbN2eswsBUkxzwmTdMdUrVR1v2j3jjzZA/exec";
 
-// ── Core Fetch ────────────────────────────────────────────────
-async function apiCall(action, data = {}, token = null) {
-  const payload = {
-    action: action,
-    data:   data,
-    token:  token || getToken(),
-  };
+// ── Core API Call via JSONP (bypass CORS) ─────────────────────
+function apiCall(action, data = {}, token = null) {
+  return new Promise((resolve) => {
+    const cbName = "arka_cb_" + Date.now() + "_" +
+                   Math.random().toString(36).slice(2);
 
-  try {
-    const response = await fetch(API_URL, {
-      method:  "POST",
-      headers: { "Content-Type": "text/plain" },
-      body:    JSON.stringify(payload),
+    const params = new URLSearchParams({
+      action:   action,
+      token:    token || getToken() || "",
+      data:     JSON.stringify(data),
+      callback: cbName,
     });
 
-    const result = await response.json();
-    return result;
+    const url    = API_URL + "?" + params.toString();
+    const script = document.createElement("script");
+    script.src   = url;
 
-  } catch (error) {
-    console.error("API Error [" + action + "]:", error);
-    return {
-      success: false,
-      message: "Koneksi ke server gagal. Periksa koneksi internet.",
+    const timeout = setTimeout(() => {
+      cleanup();
+      resolve({ success: false, message: "Request timeout. Coba lagi." });
+    }, 30000);
+
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = function(result) {
+      cleanup();
+      resolve(result);
     };
-  }
+
+    script.onerror = function() {
+      cleanup();
+      resolve({ success: false, message: "Koneksi ke server gagal." });
+    };
+
+    document.head.appendChild(script);
+  });
 }
 
 // ── Session Management ────────────────────────────────────────
@@ -57,7 +72,6 @@ function isLoggedIn() {
 }
 
 // ── Auth Guard ────────────────────────────────────────────────
-// Panggil di setiap halaman (kecuali login.html)
 function requireAuth(allowedRoles = []) {
   if (!isLoggedIn()) {
     window.location.href = "login.html";
@@ -110,61 +124,63 @@ const Dashboard = {
 
 // CAMABA
 const Camaba = {
-  getAll:  ()        => apiCall("GET_ALL_CAMABA"),
-  getById: (id)      => apiCall("GET_CAMABA",    { id }),
-  add:     (data)    => apiCall("ADD_CAMABA",    data),
-  update:  (id,data) => apiCall("UPDATE_CAMABA", { id, ...data }),
-  delete:  (id)      => apiCall("DELETE_CAMABA", { id }),
+  getAll:  ()            => apiCall("GET_ALL_CAMABA"),
+  getById: (id)          => apiCall("GET_CAMABA",    { id }),
+  add:     (data)        => apiCall("ADD_CAMABA",    data),
+  update:  (id, data)    => apiCall("UPDATE_CAMABA", { id, ...data }),
+  delete:  (id)          => apiCall("DELETE_CAMABA", { id }),
 };
 
 // BERKAS
 const Berkas = {
-  get:    (camabaId)      => apiCall("GET_BERKAS",    { camabaId }),
-  update: (camabaId,data) => apiCall("UPDATE_BERKAS", { camabaId, ...data }),
-  notifBaak: ()           => apiCall("GET_NOTIF_BAAK"),
+  get:      (camabaId)       => apiCall("GET_BERKAS",    { camabaId }),
+  update:   (camabaId, data) => apiCall("UPDATE_BERKAS", { camabaId, ...data }),
+  notifBaak: ()              => apiCall("GET_NOTIF_BAAK"),
 };
 
 // PEMBAYARAN
 const Pembayaran = {
-  get:    (camabaId)      => apiCall("GET_PEMBAYARAN",    { camabaId }),
-  update: (camabaId,data) => apiCall("UPDATE_PEMBAYARAN", { camabaId, ...data }),
+  get:    (camabaId)       => apiCall("GET_PEMBAYARAN",    { camabaId }),
+  update: (camabaId, data) => apiCall("UPDATE_PEMBAYARAN", { camabaId, ...data }),
 };
 
 // NIM
 const Nim = {
-  getList: ()                           => apiCall("GET_NIM_LIST"),
+  getList: () =>
+    apiCall("GET_NIM_LIST"),
   release: (camabaId, nim, overrideCode) =>
     apiCall("RELEASE_NIM", { camabaId, nim, overrideCode }),
 };
 
 // SURAT
 const Surat = {
-  generate1: (camabaId)  => apiCall("GENERATE_SURAT1", { camabaId }),
-  generate2: (camabaId)  => apiCall("GENERATE_SURAT2", { camabaId }),
-  generate3: (filters)   => apiCall("GENERATE_SURAT3", { filters }),
+  generate1: (camabaId) => apiCall("GENERATE_SURAT1", { camabaId }),
+  generate2: (camabaId) => apiCall("GENERATE_SURAT2", { camabaId }),
+  generate3: (filters)  => apiCall("GENERATE_SURAT3", { filters }),
 };
 
 // MASTER
 const Master = {
-  get:    (type)          => apiCall("GET_MASTER",    { type }),
-  add:    (type, row)     => apiCall("ADD_MASTER",    { type, row }),
-  update: (type, id, row) => apiCall("UPDATE_MASTER", { type, id, row }),
+  get:    (type)           => apiCall("GET_MASTER",    { type }),
+  add:    (type, row)      => apiCall("ADD_MASTER",    { type, row }),
+  update: (type, id, row)  => apiCall("UPDATE_MASTER", { type, id, row }),
 };
 
 // USERS (Admin only)
 const Users = {
-  getAll:         ()          => apiCall("GET_USERS"),
-  add:            (data)      => apiCall("ADD_USER",       data),
-  update:         (id, data)  => apiCall("UPDATE_USER",    { id, ...data }),
-  resetPassword:  (userId)    => apiCall("RESET_PASSWORD", { userId }),
-  setOverrideCode:(code)      => apiCall("SET_OVERRIDE_CODE", { code }),
+  getAll:          ()         => apiCall("GET_USERS"),
+  add:             (data)     => apiCall("ADD_USER",          data),
+  update:          (id, data) => apiCall("UPDATE_USER",       { id, ...data }),
+  resetPassword:   (userId)   => apiCall("RESET_PASSWORD",    { userId }),
+  setOverrideCode: (code)     => apiCall("SET_OVERRIDE_CODE", { code }),
 };
 
 // ── UI Helpers ────────────────────────────────────────────────
 function showLoading(message = "Memuat...") {
   const el = document.getElementById("loading-overlay");
   if (el) {
-    el.querySelector(".loading-text").textContent = message;
+    const txt = el.querySelector(".loading-text");
+    if (txt) txt.textContent = message;
     el.classList.remove("hidden");
   }
 }
@@ -176,32 +192,37 @@ function hideLoading() {
 
 function showToast(message, type = "success") {
   const toast = document.createElement("div");
-  toast.className = "toast toast-" + type;
+  toast.className  = "toast toast-" + type;
   toast.textContent = message;
   document.body.appendChild(toast);
   setTimeout(() => toast.classList.add("show"), 10);
   setTimeout(() => {
     toast.classList.remove("show");
     setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  }, 3500);
 }
 
-function showError(message) { showToast(message, "error"); }
+function showError(message)   { showToast(message, "error"); }
 function showSuccess(message) { showToast(message, "success"); }
 function showWarning(message) { showToast(message, "warning"); }
 
 // ── Format Helpers ────────────────────────────────────────────
 function formatRupiah(angka) {
-  if (!angka) return "Rp 0";
+  if (!angka && angka !== 0) return "Rp 0";
   return "Rp " + Number(angka).toLocaleString("id-ID");
 }
 
 function formatTanggal(dateStr) {
   if (!dateStr) return "-";
-  const bulan = ["Jan","Feb","Mar","Apr","Mei","Jun",
-                 "Jul","Agu","Sep","Okt","Nov","Des"];
-  const d = new Date(dateStr);
-  return d.getDate() + " " + bulan[d.getMonth()] + " " + d.getFullYear();
+  const bulan = [
+    "Jan","Feb","Mar","Apr","Mei","Jun",
+    "Jul","Agu","Sep","Okt","Nov","Des",
+  ];
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    return d.getDate() + " " + bulan[d.getMonth()] + " " + d.getFullYear();
+  } catch { return dateStr; }
 }
 
 function getStatusBadge(status) {
@@ -216,6 +237,67 @@ function getStatusBadge(status) {
     "BELUM BAYAR":    "badge-red",
     "BAYAR SEBAGIAN": "badge-yellow",
     "LUNAS":          "badge-green",
+    "AKTIF":          "badge-green",
+    "DITAHAN":        "badge-yellow",
+    "DIBATALKAN":     "badge-red",
   };
-  return `<span class="badge ${map[status] || 'badge-gray'}">${status}</span>`;
+  return `<span class="badge ${map[status] || "badge-gray"}">${status || "-"}</span>`;
+}
+
+function getKelasLabel(kode) {
+  const map = {
+    "REG":  "Reguler",
+    "PAR":  "Paralel",
+    "FLEX": "Flex Class",
+    "RPL":  "RPL",
+  };
+  return map[kode] || kode || "-";
+}
+
+function getProdiLabel(kode) {
+  const map = {
+    "11": "S1 Teknik Informatika",
+    "22": "D3 Manajemen Informatika",
+    "33": "S1 Sistem Informasi",
+  };
+  return map[kode] || kode || "-";
+}
+
+function getGelombangLabel(kode) {
+  const map = {
+    "GEL-2026-1": "Gelombang 1",
+    "GEL-2026-2": "Gelombang 2",
+    "GEL-2026-3": "Gelombang 3",
+  };
+  return map[kode] || kode || "-";
+}
+
+// ── Confirm Dialog ────────────────────────────────────────────
+function confirmDialog(message) {
+  return window.confirm(message);
+}
+
+// ── Debounce ──────────────────────────────────────────────────
+function debounce(fn, delay = 300) {
+  let timer;
+  return function(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+// ── Table Search Filter ───────────────────────────────────────
+function filterTable(inputId, tableId) {
+  const input = document.getElementById(inputId);
+  const table = document.getElementById(tableId);
+  if (!input || !table) return;
+
+  input.addEventListener("input", debounce(function() {
+    const keyword = this.value.toLowerCase();
+    const rows    = table.querySelectorAll("tbody tr");
+    rows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(keyword) ? "" : "none";
+    });
+  }, 200));
 }
