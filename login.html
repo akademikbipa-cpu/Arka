@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARKA — Login</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .login-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 20px 0;
+    }
+    .login-footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .password-wrapper {
+      position: relative;
+    }
+    .password-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 1rem;
+      padding: 4px;
+    }
+    .password-toggle:hover { color: var(--primary); }
+    .login-card-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .login-badge {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 12px;
+      border-radius: 20px;
+      margin-top: 6px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+  <div class="loading-text">Memuat...</div>
+</div>
+
+<!-- Login Page -->
+<div class="login-page">
+  <div class="login-card">
+
+    <!-- Logo & Title -->
+    <div class="login-card-header">
+      <div style="font-size:2.8rem; margin-bottom:8px;">🎓</div>
+      <div class="login-logo-title">ARKA</div>
+      <div class="login-logo-sub">Sistem Informasi PMB</div>
+      <div class="login-badge">STMIK Bina Patria — TA 2026/2027</div>
+    </div>
+
+    <hr class="login-divider" />
+
+    <!-- Error Message -->
+    <div id="error-message"
+         class="alert alert-danger"
+         style="display:none; margin-bottom:16px;">
+    </div>
+
+    <!-- Form Login -->
+    <form id="login-form" autocomplete="off" novalidate>
+
+      <div class="form-group">
+        <label class="form-label" for="email">
+          Email <span class="required">*</span>
+        </label>
+        <input
+          id="email"
+          type="email"
+          class="form-control"
+          placeholder="nama@stmikbinapatria.ac.id"
+          autocomplete="username"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">
+          Password <span class="required">*</span>
+        </label>
+        <div class="password-wrapper">
+          <input
+            id="password"
+            type="password"
+            class="form-control"
+            placeholder="Masukkan password"
+            autocomplete="current-password"
+            required
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            id="toggle-password"
+            title="Tampilkan/sembunyikan password"
+          >👁️</button>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        id="btn-login"
+        class="btn btn-primary w-100"
+        style="margin-top:8px; padding:11px; font-size:0.95rem;"
+      >
+        Masuk
+      </button>
+
+    </form>
+
+    <div class="login-footer">
+      <p>Hubungi Admin jika mengalami masalah login.</p>
+      <p style="margin-top:4px;">
+        &copy; 2026 STMIK Bina Patria — ARKA v1.0
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // Toggle password visibility
+  document.getElementById("toggle-password")
+    .addEventListener("click", function () {
+      const input = document.getElementById("password");
+      const isHidden = input.type === "password";
+      input.type = isHidden ? "text" : "password";
+      this.textContent = isHidden ? "🙈" : "👁️";
+    });
+
+  // Enter key submit
+  document.getElementById("password")
+    .addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        document.getElementById("login-form").requestSubmit();
+      }
+    });
+
+  // Auto focus email
+  document.getElementById("email").focus();
+</script>
+
+</body>
+</html>
