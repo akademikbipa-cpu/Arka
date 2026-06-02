@@ -2,26 +2,25 @@
 // js/auth.js — Login, Session & Logout Handler
 // ============================================================
 
+// ── Helper ambil role ─────────────────────────────────────────
+function getUserRole() {
+  const user = getUser();
+  if (!user) return null;
+  return user.userRole || user.role || null;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  // Kalau sudah login, redirect ke dashboard
   if (isLoggedIn() && window.location.pathname.includes("login")) {
-    redirectByRole(getUser().userRole);
+    redirectByRole(getUserRole());
     return;
   }
 
-  // Setup form login
   const form = document.getElementById("login-form");
-  if (form) {
-    form.addEventListener("submit", handleLogin);
-  }
+  if (form) form.addEventListener("submit", handleLogin);
 
-  // Setup tombol logout di semua halaman
   const btnLogout = document.getElementById("btn-logout");
-  if (btnLogout) {
-    btnLogout.addEventListener("click", handleLogout);
-  }
+  if (btnLogout) btnLogout.addEventListener("click", handleLogout);
 
-  // Render user info di navbar
   renderUserInfo();
 });
 
@@ -34,13 +33,11 @@ async function handleLogin(e) {
   const btnLogin = document.getElementById("btn-login");
   const errMsg   = document.getElementById("error-message");
 
-  // Validasi input
   if (!email || !password) {
     showFieldError(errMsg, "Email dan password wajib diisi.");
     return;
   }
 
-  // Loading state
   btnLogin.disabled    = true;
   btnLogin.textContent = "Memuat...";
   if (errMsg) errMsg.textContent = "";
@@ -49,19 +46,15 @@ async function handleLogin(e) {
     const result = await Auth.login(email, password);
 
     if (result.success) {
-      // Simpan session
       saveSession(result.token, result.user);
       showSuccess("Login berhasil! Mengalihkan...");
-
-      // Redirect sesuai role
-      setTimeout(() => redirectByRole(result.user.role), 800);
-
+      const role = result.user.userRole || result.user.role;
+      setTimeout(() => redirectByRole(role), 800);
     } else {
       showFieldError(errMsg, result.message || "Login gagal.");
       btnLogin.disabled    = false;
       btnLogin.textContent = "Masuk";
     }
-
   } catch (err) {
     showFieldError(errMsg, "Terjadi kesalahan. Coba lagi.");
     btnLogin.disabled    = false;
@@ -71,11 +64,8 @@ async function handleLogin(e) {
 
 // ── Handle Logout ─────────────────────────────────────────────
 async function handleLogout() {
-  const confirm = window.confirm("Yakin ingin keluar?");
-  if (!confirm) return;
-
+  if (!window.confirm("Yakin ingin keluar?")) return;
   showLoading("Keluar dari sistem...");
-
   try {
     await Auth.logout();
   } catch {
@@ -86,52 +76,39 @@ async function handleLogout() {
 
 // ── Redirect by Role ──────────────────────────────────────────
 function redirectByRole(role) {
-  const map = {
-    "ADMIN":    "dashboard.html",
-    "PMB":      "dashboard.html",
-    "KEUANGAN": "dashboard.html",
-    "AKADEMIK": "dashboard.html",
-    "PIMPINAN": "dashboard.html",
-    "YAYASAN":  "dashboard.html",
-  };
-  window.location.href = map[role] || "dashboard.html";
+  window.location.href = "dashboard.html";
 }
 
-// ── Render User Info di Navbar ────────────────────────────────
+// ── Render User Info ──────────────────────────────────────────
 function renderUserInfo() {
   const user = getUser();
   if (!user) return;
 
-  // Nama user
-  const elName = document.getElementById("user-name");
-  if (elName) elName.textContent = user.userName || user.name;
+  const role = user.userRole || user.role || "";
+  const nama = user.userName || user.name || "User";
 
-  // Role badge
+  const elName = document.getElementById("user-name");
+  if (elName) elName.textContent = nama;
+
   const elRole = document.getElementById("user-role");
   if (elRole) {
-    elRole.textContent  = user.userRole || user.role;
-    elRole.className    = "role-badge role-" +
-                          (user.userRole || user.role).toLowerCase();
+    elRole.textContent = role;
+    elRole.className   = "role-badge role-" + role.toLowerCase();
   }
 
-  // Inisial avatar
   const elAvatar = document.getElementById("user-avatar");
-  if (elAvatar) {
-    const nama = user.userName || user.name || "?";
-    elAvatar.textContent = nama.charAt(0).toUpperCase();
-  }
+  if (elAvatar) elAvatar.textContent = nama.charAt(0).toUpperCase();
 }
 
-// ── Render Sidebar Menu by Role ───────────────────────────────
+// ── Render Sidebar ────────────────────────────────────────────
 function renderSidebar() {
   const user = getUser();
   if (!user) return;
 
-  const role    = user.userRole || user.role;
+  const role    = user.userRole || user.role || "";
   const sidebar = document.getElementById("sidebar-menu");
   if (!sidebar) return;
 
-  // Menu items per role
   const menus = [
     {
       icon:  "📊",
@@ -177,14 +154,12 @@ function renderSidebar() {
     },
   ];
 
-  // Filter menu sesuai role
-  const allowed = menus.filter(m => m.roles.includes(role));
-
-  // Render HTML
+  const allowed    = menus.filter(m => m.roles.includes(role));
   const currentPage = window.location.pathname.split("/").pop();
+
   sidebar.innerHTML = allowed.map(m => `
     <a href="${m.href}"
-       class="sidebar-item ${currentPage === m.href ? 'active' : ''}">
+       class="sidebar-item ${currentPage === m.href ? "active" : ""}">
       <span class="sidebar-icon">${m.icon}</span>
       <span class="sidebar-label">${m.label}</span>
     </a>
@@ -193,30 +168,28 @@ function renderSidebar() {
 
 // ── Page Guard ────────────────────────────────────────────────
 function initPage(allowedRoles = []) {
-  // Cek login
   if (!isLoggedIn()) {
     window.location.href = "login.html";
     return false;
   }
 
-  // Cek role
-  if (allowedRoles.length > 0 && !hasRole(...allowedRoles)) {
+  const role = getUserRole();
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
     showError("Akses ditolak. Anda tidak memiliki izin.");
     setTimeout(() => window.location.href = "dashboard.html", 1500);
     return false;
   }
 
-  // Render sidebar & user info
   renderSidebar();
   renderUserInfo();
-
   return true;
 }
 
 // ── UI Helpers ────────────────────────────────────────────────
 function showFieldError(el, message) {
   if (!el) return;
-  el.textContent  = message;
+  el.textContent   = message;
   el.style.display = "block";
 }
 
