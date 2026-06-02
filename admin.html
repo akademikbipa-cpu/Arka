@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARKA — Admin Panel</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .admin-tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .admin-tab-btn {
+      padding: 10px 20px;
+      border: none;
+      background: none;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: var(--transition);
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    }
+    .admin-tab-btn:hover {
+      background: var(--gray-light);
+      color: var(--primary);
+    }
+    .admin-tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .admin-tab-content { display: none; }
+    .admin-tab-content.active { display: block; }
+    .user-row-role {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .config-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .config-row:last-child { border-bottom: none; }
+    .config-key {
+      font-family: monospace;
+      font-size: 0.82rem;
+      color: var(--primary);
+      font-weight: 600;
+      width: 220px;
+      flex-shrink: 0;
+    }
+    .config-val {
+      flex: 1;
+      font-size: 0.875rem;
+    }
+    .config-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      width: 260px;
+      flex-shrink: 0;
+    }
+    .master-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+    .master-item:last-child { border-bottom: none; }
+    .master-item-code {
+      font-family: monospace;
+      font-weight: 700;
+      color: var(--purple);
+      background: var(--purple-light);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      width: 60px;
+      text-align: center;
+    }
+    .master-item-name { flex: 1; font-weight: 500; }
+    .stat-box {
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .stat-box-val {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .stat-box-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .override-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .override-set {
+      background: var(--green-light);
+      color: var(--green);
+    }
+    .override-notset {
+      background: var(--red-light);
+      color: var(--red);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+  <div class="loading-text">Memuat...</div>
+</div>
+
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar">
+    <div class="sidebar-logo">
+      <div>
+        <div class="sidebar-logo-text">🎓 ARKA</div>
+        <div class="sidebar-logo-sub">SLA PMB STMIK Bina Patria</div>
+      </div>
+    </div>
+    <div class="sidebar-section">Menu</div>
+    <nav id="sidebar-menu"></nav>
+    <div class="sidebar-bottom">
+      <button id="btn-logout" class="sidebar-item w-100"
+        style="border:none;background:none;color:rgba(255,255,255,0.6);
+               font-size:0.875rem;cursor:pointer;text-align:left;">
+        🚪 Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-title">⚙️ Admin Panel</div>
+    <div class="header-right">
+      <span class="role-badge" id="user-role"></span>
+      <div class="user-avatar" id="user-avatar"></div>
+      <span class="user-name" id="user-name"></span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <div class="page-title">Admin Panel</div>
+      <div class="page-subtitle">
+        Kelola user, master data, konfigurasi sistem & keamanan
+      </div>
+    </div>
+
+    <!-- Admin Tabs -->
+    <div class="admin-tabs">
+      <button class="admin-tab-btn active"
+              onclick="switchAdminTab('tab-users', this)">
+        👥 User Management
+      </button>
+      <button class="admin-tab-btn"
+              onclick="switchAdminTab('tab-master', this)">
+        📚 Master Data
+      </button>
+      <button class="admin-tab-btn"
+              onclick="switchAdminTab('tab-config', this)">
+        ⚙️ Konfigurasi
+      </button>
+      <button class="admin-tab-btn"
+              onclick="switchAdminTab('tab-security', this)">
+        🔐 Keamanan
+      </button>
+      <button class="admin-tab-btn"
+              onclick="switchAdminTab('tab-audit', this)">
+        📋 Audit Log
+      </button>
+    </div>
+
+    <!-- ── TAB: USER MANAGEMENT ── -->
+    <div class="admin-tab-content active" id="tab-users">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👥 Daftar User</div>
+          <button class="btn btn-primary btn-sm"
+                  onclick="openModalUser()">
+            ➕ Tambah User
+          </button>
+        </div>
+
+        <div class="filter-bar" style="margin-bottom:12px;">
+          <input type="text" id="search-user"
+                 class="search-input"
+                 placeholder="🔍 Cari nama atau email..." />
+          <select id="filter-role" class="form-control"
+                  style="width:auto; min-width:140px;">
+            <option value="">Semua Role</option>
+            <option value="ADMIN">Admin</option>
+            <option value="PMB">PMB</option>
+            <option value="KEUANGAN">Keuangan</option>
+            <option value="AKADEMIK">Akademik</option>
+            <option value="PIMPINAN">Pimpinan</option>
+            <option value="YAYASAN">Yayasan</option>
+          </select>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Tgl Dibuat</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-users">
+              <tr>
+                <td colspan="7" class="text-center text-muted"
+                    style="padding:24px;">
+                  ⏳ Memuat data user...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: MASTER DATA ── -->
+    <div class="admin-tab-content" id="tab-master">
+      <div style="display:grid;
+                  grid-template-columns:1fr 1fr;
+                  gap:20px;">
+
+        <!-- Beasiswa -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🎖️ Master Beasiswa</div>
+            <button class="btn btn-primary btn-sm"
+                    onclick="openModalBeasiswa()">
+              ➕ Tambah
+            </button>
+          </div>
+          <div id="list-beasiswa">
+            <div class="text-center text-muted"
+                 style="padding:16px;">
+              Memuat...
+            </div>
+          </div>
+        </div>
+
+        <!-- Gelombang -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🌊 Master Gelombang</div>
+            <button class="btn btn-primary btn-sm"
+                    onclick="openModalGelombang()">
+              ➕ Tambah
+            </button>
+          </div>
+          <div id="list-gelombang">
+            <div class="text-center text-muted"
+                 style="padding:16px;">
+              Memuat...
+            </div>
+          </div>
+        </div>
+
+        <!-- Prodi (read-only) -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🎓 Master Prodi</div>
+            <span class="badge badge-gray">Read-only</span>
+          </div>
+          <div id="list-prodi">
+            <div class="text-center text-muted"
+                 style="padding:16px;">
+              Memuat...
+            </div>
+          </div>
+        </div>
+
+        <!-- Kelas (read-only) -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🏫 Master Kelas</div>
+            <span class="badge badge-gray">Read-only</span>
+          </div>
+          <div id="list-kelas">
+            <div class="text-center text-muted"
+                 style="padding:16px;">
+              Memuat...
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── TAB: KONFIGURASI ── -->
+    <div class="admin-tab-content" id="tab-config">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⚙️ Konfigurasi Sistem</div>
+          <button class="btn btn-outline btn-sm"
+                  onclick="loadConfig()">
+            🔄 Refresh
+          </button>
+        </div>
+
+        <div class="alert alert-warning mb-2">
+          ⚠️ Perubahan konfigurasi akan langsung mempengaruhi
+          sistem. Pastikan nilai yang dimasukkan sudah benar.
+        </div>
+
+        <div id="config-list">
+          <div class="text-center text-muted"
+               style="padding:24px;">
+            Memuat konfigurasi...
+          </div>
+        </div>
+      </div>
+
+      <!-- Ganti Tahun Akademik -->
+      <div class="card mt-2">
+        <div class="card-header">
+          <div class="card-title">📅 Update Tahun Akademik</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Tahun Akademik Aktif</label>
+            <input id="cfg-ta" type="text" class="form-control"
+                   placeholder="2026/2027" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tahun Angkatan (YY)</label>
+            <input id="cfg-angkatan" type="text"
+                   class="form-control"
+                   placeholder="26" maxlength="2" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gelombang Aktif</label>
+            <select id="cfg-gelombang" class="form-control">
+              <option value="1">Gelombang 1</option>
+              <option value="2">Gelombang 2</option>
+              <option value="3">Gelombang 3</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nama WK I</label>
+            <input id="cfg-waket" type="text" class="form-control"
+                   placeholder="Nama lengkap WK I" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nama Ketua</label>
+            <input id="cfg-ketua" type="text" class="form-control"
+                   placeholder="Nama lengkap Ketua" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kota Institusi</label>
+            <input id="cfg-kota" type="text" class="form-control"
+                   placeholder="Magelang" />
+          </div>
+        </div>
+        <button class="btn btn-primary mt-1"
+                onclick="simpanConfig()">
+          💾 Simpan Konfigurasi
+        </button>
+      </div>
+    </div>
+
+    <!-- ── TAB: KEAMANAN ── -->
+    <div class="admin-tab-content" id="tab-security">
+      <div style="display:grid;
+                  grid-template-columns:1fr 1fr;
+                  gap:20px;">
+
+        <!-- Override Code -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔐 Override Code NIM</div>
+          </div>
+          <div class="surat-desc" style="font-size:0.875rem;
+               color:var(--text-muted); margin-bottom:16px;">
+            Override Code digunakan oleh WK I untuk mengizinkan
+            penerbitan NIM meski berkas belum lengkap.
+            Kode ini hanya diketahui oleh WK I.
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <div style="font-size:0.82rem; color:var(--text-muted);
+                        margin-bottom:6px;">
+              Status Override Code:
+            </div>
+            <span id="override-status"
+                  class="override-status override-notset">
+              ⚠️ Belum diset
+            </span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              Override Code Baru
+              <span class="required">*</span>
+            </label>
+            <input id="input-override-code" type="password"
+                   class="form-control"
+                   placeholder="Min. 6 karakter" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Konfirmasi Kode</label>
+            <input id="input-override-confirm" type="password"
+                   class="form-control"
+                   placeholder="Ulangi kode" />
+          </div>
+          <button class="btn btn-warning"
+                  onclick="setOverrideCode()">
+            🔐 Set Override Code
+          </button>
+        </div>
+
+        <!-- Ganti Password -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔑 Ganti Password Saya</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password Lama</label>
+            <input id="old-password" type="password"
+                   class="form-control"
+                   placeholder="Password saat ini" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password Baru</label>
+            <input id="new-password" type="password"
+                   class="form-control"
+                   placeholder="Min. 8 karakter" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Konfirmasi Password Baru</label>
+            <input id="confirm-password" type="password"
+                   class="form-control"
+                   placeholder="Ulangi password baru" />
+          </div>
+          <button class="btn btn-primary"
+                  onclick="gantiPassword()">
+            🔑 Ganti Password
+          </button>
+        </div>
+
+        <!-- Info Sistem -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">ℹ️ Info Sistem</div>
+          </div>
+          <div id="info-sistem">
+            <div class="config-row">
+              <div class="config-key">App Version</div>
+              <div class="config-val">ARKA v1.0.0</div>
+            </div>
+            <div class="config-row">
+              <div class="config-key">Session Duration</div>
+              <div class="config-val">8 jam</div>
+            </div>
+            <div class="config-row">
+              <div class="config-key">Database</div>
+              <div class="config-val">Google Sheets</div>
+            </div>
+            <div class="config-row">
+              <div class="config-key">Backend</div>
+              <div class="config-val">Google Apps Script</div>
+            </div>
+            <div class="config-row">
+              <div class="config-key">Frontend</div>
+              <div class="config-val">GitHub Pages</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reset Password User -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔄 Reset Password User</div>
+          </div>
+          <div class="surat-desc"
+               style="font-size:0.875rem;
+                      color:var(--text-muted);
+                      margin-bottom:12px;">
+            Reset password user ke default:
+            <strong>Pass1234!</strong>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pilih User</label>
+            <select id="reset-user-select" class="form-control">
+              <option value="">-- Pilih User --</option>
+            </select>
+          </div>
+          <button class="btn btn-danger"
+                  onclick="resetUserPassword()">
+            🔄 Reset Password
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── TAB: AUDIT LOG ── -->
+    <div class="admin-tab-content" id="tab-audit">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Audit Log Sistem</div>
+          <div class="d-flex gap-1">
+            <input type="text" id="search-audit"
+                   class="search-input"
+                   style="width:200px;"
+                   placeholder="🔍 Cari..." />
+            <select id="filter-audit-aksi"
+                    class="form-control"
+                    style="width:auto; min-width:160px;">
+              <option value="">Semua Aksi</option>
+              <option value="LOGIN">Login</option>
+              <option value="LOGOUT">Logout</option>
+              <option value="ADD_CAMABA">Add Camaba</option>
+              <option value="UPDATE_CAMABA">Update Camaba</option>
+              <option value="RELEASE_NIM">Rilis NIM</option>
+              <option value="OVERRIDE_NIM">Override NIM</option>
+              <option value="GENERATE_SURAT">Generate Surat</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Waktu</th>
+                <th>User</th>
+                <th>Role</th>
+                <th>Aksi</th>
+                <th>Target</th>
+                <th>Detail</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-audit">
+              <tr>
+                <td colspan="8" class="text-center text-muted"
+                    style="padding:24px;">
+                  ⏳ Memuat audit log...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ MODAL TAMBAH/EDIT USER ══ -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-user-title">
+        ➕ Tambah User Baru
+      </div>
+      <button class="modal-close"
+              onclick="closeModal('modal-user')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="user-edit-id" />
+      <div class="form-group">
+        <label class="form-label">
+          Nama Lengkap <span class="required">*</span>
+        </label>
+        <input id="user-nama" type="text" class="form-control"
+               placeholder="Nama lengkap" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">
+          Email <span class="required">*</span>
+        </label>
+        <input id="user-email" type="email" class="form-control"
+               placeholder="email@stmikbinapatria.ac.id" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">
+          Role <span class="required">*</span>
+        </label>
+        <select id="user-role-select" class="form-control">
+          <option value="">-- Pilih Role --</option>
+          <option value="ADMIN">Admin</option>
+          <option value="PMB">PMB</option>
+          <option value="KEUANGAN">Keuangan</option>
+          <option value="AKADEMIK">Akademik (BAAK)</option>
+          <option value="PIMPINAN">Pimpinan</option>
+          <option value="YAYASAN">Yayasan</option>
+        </select>
+      </div>
+      <div class="form-group" id="user-status-group">
+        <label class="form-label">Status</label>
+        <select id="user-status" class="form-control">
+          <option value="Aktif">Aktif</option>
+          <option value="Nonaktif">Nonaktif</option>
+        </select>
+      </div>
+      <div class="alert alert-info" style="font-size:0.82rem;">
+        ℹ️ Password default: <strong>Pass1234!</strong>
+        — User wajib ganti password setelah login pertama.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline"
+              onclick="closeModal('modal-user')">
+        Batal
+      </button>
+      <button class="btn btn-primary"
+              onclick="simpanUser()">
+        💾 Simpan
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL TAMBAH BEASISWA ══ -->
+<div class="modal-overlay" id="modal-beasiswa">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">➕ Tambah Kategori Beasiswa</div>
+      <button class="modal-close"
+              onclick="closeModal('modal-beasiswa')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">
+          Nama Beasiswa <span class="required">*</span>
+        </label>
+        <input id="bsw-nama" type="text" class="form-control"
+               placeholder="Nama beasiswa" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Keterangan</label>
+        <textarea id="bsw-ket" class="form-control" rows="2"
+                  placeholder="Keterangan tambahan..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline"
+              onclick="closeModal('modal-beasiswa')">
+        Batal
+      </button>
+      <button class="btn btn-primary"
+              onclick="simpanBeasiswa()">
+        💾 Simpan
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL TAMBAH GELOMBANG ══ -->
+<div class="modal-overlay" id="modal-gelombang">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">➕ Tambah Gelombang</div>
+      <button class="modal-close"
+              onclick="closeModal('modal-gelombang')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">
+            ID Gelombang <span class="required">*</span>
+          </label>
+          <input id="gel-id" type="text" class="form-control"
+                 placeholder="GEL-2027-1" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">
+            Nama Gelombang <span class="required">*</span>
+          </label>
+          <input id="gel-nama" type="text" class="form-control"
+                 placeholder="Gelombang 1" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tahun Akademik</label>
+          <input id="gel-ta" type="text" class="form-control"
+                 placeholder="2027/2028" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kuota</label>
+          <input id="gel-kuota" type="number"
+                 class="form-control" placeholder="150" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tanggal Buka</label>
+          <input id="gel-buka" type="date" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tanggal Tutup</label>
+          <input id="gel-tutup" type="date" class="form-control" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline"
+              onclick="closeModal('modal-gelombang')">
+        Batal
+      </button>
+      <button class="btn btn-primary"
+              onclick="simpanGelombang()">
+        💾 Simpan
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+
+let allUsers   = [];
+let allAuditLog = [];
+
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  if (!initPage(["ADMIN"])) return;
+  loadUsers();
+  loadMasterData();
+  loadConfig();
+  loadAuditLog();
+  checkOverrideStatus();
+});
+
+// ══════════════════════════════════════════════════════════════
+// USER MANAGEMENT
+// ══════════════════════════════════════════════════════════════
+
+async function loadUsers() {
+  showLoading("Memuat data user...");
+  try {
+    const res = await Users.getAll();
+    if (!res.success) {
+      showError(res.message || "Gagal memuat user.");
+      return;
+    }
+    allUsers = res.data || [];
+    renderUsers(allUsers);
+    populateResetSelect(allUsers);
+    setupUserFilter();
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+function renderUsers(data) {
+  const tbody = document.getElementById("tbody-users");
+
+  if (!data.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7">
+          <div class="empty-state">
+            <div class="empty-state-icon">👥</div>
+            <div class="empty-state-title">Belum ada user</div>
+          </div>
+        </td>
+      </tr>`;
+    return;
+  }
+
+  const roleColors = {
+    "ADMIN":    "#404040",
+    "PMB":      "#1D6F42",
+    "KEUANGAN": "#C55A11",
+    "AKADEMIK": "#6B3F8C",
+    "PIMPINAN": "#2E75B6",
+    "YAYASAN":  "#2E75B6",
+  };
+
+  tbody.innerHTML = data.map(u => `
+    <tr>
+      <td style="font-family:monospace; font-size:0.78rem;">
+        ${u.id}
+      </td>
+      <td><strong>${u.nama}</strong></td>
+      <td style="font-size:0.82rem;">${u.email}</td>
+      <td>
+        <span class="user-row-role"
+              style="background:${roleColors[u.role] || "#ccc"};
+                     color:white;">
+          ${u.role}
+        </span>
+      </td>
+      <td>
+        ${u.status === "Aktif"
+          ? `<span class="badge badge-green">Aktif</span>`
+          : `<span class="badge badge-red">Nonaktif</span>`}
+      </td>
+      <td style="font-size:0.82rem;">
+        ${formatTanggal(u.tglDibuat)}
+      </td>
+      <td>
+        <div class="d-flex gap-1">
+          <button class="btn btn-sm btn-outline"
+                  onclick="openModalEditUser('${u.id}')">
+            ✏️
+          </button>
+          <button class="btn btn-sm btn-danger"
+                  onclick="toggleUserStatus('${u.id}',
+                           '${u.status}', '${u.nama}')">
+            ${u.status === "Aktif" ? "🚫" : "✅"}
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function setupUserFilter() {
+  ["search-user","filter-role"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("input",  filterUsers);
+      el.addEventListener("change", filterUsers);
+    }
+  });
+}
+
+function filterUsers() {
+  const search = document.getElementById("search-user")
+                         .value.toLowerCase();
+  const role   = document.getElementById("filter-role").value;
+
+  const filtered = allUsers.filter(u => {
+    const matchSearch = !search ||
+      u.nama?.toLowerCase().includes(search) ||
+      u.email?.toLowerCase().includes(search);
+    const matchRole = !role || u.role === role;
+    return matchSearch && matchRole;
+  });
+
+  renderUsers(filtered);
+}
+
+function openModalUser() {
+  document.getElementById("modal-user-title").textContent =
+    "➕ Tambah User Baru";
+  document.getElementById("user-edit-id").value  = "";
+  document.getElementById("user-nama").value     = "";
+  document.getElementById("user-email").value    = "";
+  document.getElementById("user-role-select").value = "";
+  document.getElementById("user-status").value   = "Aktif";
+  openModal("modal-user");
+}
+
+function openModalEditUser(id) {
+  const u = allUsers.find(x => x.id === id);
+  if (!u) return;
+
+  document.getElementById("modal-user-title").textContent =
+    "✏️ Edit User: " + u.nama;
+  document.getElementById("user-edit-id").value      = u.id;
+  document.getElementById("user-nama").value         = u.nama;
+  document.getElementById("user-email").value        = u.email;
+  document.getElementById("user-role-select").value  = u.role;
+  document.getElementById("user-status").value       = u.status;
+  openModal("modal-user");
+}
+
+async function simpanUser() {
+  const id    = document.getElementById("user-edit-id").value;
+  const nama  = document.getElementById("user-nama").value.trim();
+  const email = document.getElementById("user-email").value.trim();
+  const role  = document.getElementById("user-role-select").value;
+
+  if (!nama || !email || !role) {
+    showError("Nama, email, dan role wajib diisi.");
+    return;
+  }
+
+  showLoading("Menyimpan user...");
+  try {
+    let res;
+    if (id) {
+      res = await Users.update(id, {
+        nama,
+        email,
+        role,
+        status: document.getElementById("user-status").value,
+      });
+    } else {
+      res = await Users.add({ nama, email, role });
+    }
+
+    if (res.success) {
+      showSuccess(id
+        ? "User berhasil diupdate!"
+        : "User berhasil ditambahkan! Password: Pass1234!");
+      closeModal("modal-user");
+      await loadUsers();
+    } else {
+      showError(res.message || "Gagal menyimpan.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+async function toggleUserStatus(id, currentStatus, nama) {
+  const newStatus = currentStatus === "Aktif" ? "Nonaktif" : "Aktif";
+  if (!confirmDialog(
+    `${newStatus === "Nonaktif" ? "Nonaktifkan" : "Aktifkan"}
+    user "${nama}"?`
+  )) return;
+
+  showLoading("Mengupdate status user...");
+  try {
+    const res = await Users.update(id, { status: newStatus });
+    if (res.success) {
+      showSuccess(`User berhasil di${newStatus.toLowerCase()}kan.`);
+      await loadUsers();
+    } else {
+      showError(res.message || "Gagal update status.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+function populateResetSelect(users) {
+  const sel = document.getElementById("reset-user-select");
+  sel.innerHTML = `<option value="">-- Pilih User --</option>` +
+    users.map(u =>
+      `<option value="${u.id}">${u.nama} (${u.role})</option>`
+    ).join("");
+}
+
+async function resetUserPassword() {
+  const userId = document.getElementById("reset-user-select").value;
+  if (!userId) {
+    showError("Pilih user terlebih dahulu.");
+    return;
+  }
+
+  const u = allUsers.find(x => x.id === userId);
+  if (!confirmDialog(
+    `Reset password "${u?.nama}" ke "Pass1234!"?`
+  )) return;
+
+  showLoading("Reset password...");
+  try {
+    const res = await Users.resetPassword(userId);
+    if (res.success) {
+      showSuccess("Password berhasil direset ke: Pass1234!");
+    } else {
+      showError(res.message || "Gagal reset password.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// MASTER DATA
+// ══════════════════════════════════════════════════════════════
+
+async function loadMasterData() {
+  try {
+    const [resBeasiswa, resGelombang, resProdi, resKelas] =
+      await Promise.all([
+        Master.get("beasiswa"),
+        Master.get("gelombang"),
+        Master.get("prodi"),
+        Master.get("kelas"),
+      ]);
+
+    if (resBeasiswa.success) renderBeasiswa(resBeasiswa.data);
+    if (resGelombang.success) renderGelombang(resGelombang.data);
+    if (resProdi.success) renderProdi(resProdi.data);
+    if (resKelas.success) renderKelas(resKelas.data);
+
+  } catch (e) { /* silent */ }
+}
+
+function renderBeasiswa(data) {
+  const el = document.getElementById("list-beasiswa");
+  if (!data?.length) {
+    el.innerHTML = `<div class="text-center text-muted"
+                         style="padding:12px;">
+                      Belum ada data
+                    </div>`;
+    return;
+  }
+  el.innerHTML = data.map(r => `
+    <div class="master-item">
+      <div class="master-item-code"
+           style="width:80px; font-size:0.72rem;">
+        ${r[0]}
+      </div>
+      <div class="master-item-name">${r[1]}</div>
+      <span class="badge ${r[2] === "Aktif"
+        ? "badge-green" : "badge-red"}">
+        ${r[2]}
+      </span>
+    </div>
+  `).join("");
+}
+
+function renderGelombang(data) {
+  const el = document.getElementById("list-gelombang");
+  if (!data?.length) {
+    el.innerHTML = `<div class="text-center text-muted"
+                         style="padding:12px;">
+                      Belum ada data
+                    </div>`;
+    return;
+  }
+  el.innerHTML = data.map(r => `
+    <div class="master-item">
+      <div class="master-item-name">
+        <strong>${r[1]}</strong>
+        <div style="font-size:0.75rem; color:var(--text-muted);">
+          ${r[2]} | Kuota: ${r[5]}
+        </div>
+      </div>
+      <span class="badge ${r[6] === "Aktif"
+        ? "badge-green" : "badge-red"}">
+        ${r[6]}
+      </span>
+    </div>
+  `).join("");
+}
+
+function renderProdi(data) {
+  const el = document.getElementById("list-prodi");
+  if (!data?.length) {
+    el.innerHTML = `<div class="text-center text-muted"
+                         style="padding:12px;">
+                      Belum ada data
+                    </div>`;
+    return;
+  }
+  el.innerHTML = data.map(r => `
+    <div class="master-item">
+      <div class="master-item-code">${r[0]}</div>
+      <div class="master-item-name">
+        <strong>${r[1]}</strong>
+        <span style="font-size:0.75rem;
+                     color:var(--text-muted);
+                     margin-left:6px;">
+          ${r[2]}
+        </span>
+      </div>
+      <span class="badge badge-green">${r[3]}</span>
+    </div>
+  `).join("");
+}
+
+function renderKelas(data) {
+  const el = document.getElementById("list-kelas");
+  if (!data?.length) {
+    el.innerHTML = `<div class="text-center text-muted"
+                         style="padding:12px;">
+                      Belum ada data
+                    </div>`;
+    return;
+  }
+  el.innerHTML = data.map(r => `
+    <div class="master-item">
+      <div class="master-item-code">${r[0]}</div>
+      <div class="master-item-name">
+        <strong>${r[1]}</strong>
+        <div style="font-size:0.75rem;
+                    color:var(--text-muted);
+                    margin-top:2px;">
+          ${r[3]}
+        </div>
+      </div>
+      <span class="badge badge-green">${r[4]}</span>
+    </div>
+  `).join("");
+}
+
+function openModalBeasiswa() {
+  document.getElementById("bsw-nama").value = "";
+  document.getElementById("bsw-ket").value  = "";
+  openModal("modal-beasiswa");
+}
+
+async function simpanBeasiswa() {
+  const nama = document.getElementById("bsw-nama").value.trim();
+  if (!nama) { showError("Nama beasiswa wajib diisi."); return; }
+
+  const count = (await Master.get("beasiswa")).data?.length || 0;
+  const id    = "BSW-" + String(count + 1).padStart(3, "0");
+  const ket   = document.getElementById("bsw-ket").value;
+
+  showLoading("Menyimpan...");
+  try {
+    const res = await Master.add("beasiswa",
+      [id, nama, "Aktif", ket]);
+    if (res.success) {
+      showSuccess("Beasiswa berhasil ditambahkan!");
+      closeModal("modal-beasiswa");
+      loadMasterData();
+    } else {
+      showError(res.message || "Gagal menyimpan.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+function openModalGelombang() {
+  ["gel-id","gel-nama","gel-ta","gel-buka","gel-tutup"]
+    .forEach(id => {
+      document.getElementById(id).value = "";
+    });
+  document.getElementById("gel-kuota").value = 150;
+  openModal("modal-gelombang");
+}
+
+async function simpanGelombang() {
+  const id   = document.getElementById("gel-id").value.trim();
+  const nama = document.getElementById("gel-nama").value.trim();
+  if (!id || !nama) {
+    showError("ID dan nama gelombang wajib diisi.");
+    return;
+  }
+
+  showLoading("Menyimpan...");
+  try {
+    const res = await Master.add("gelombang", [
+      id, nama,
+      document.getElementById("gel-ta").value,
+      document.getElementById("gel-buka").value,
+      document.getElementById("gel-tutup").value,
+      Number(document.getElementById("gel-kuota").value) || 150,
+      "Aktif", "",
+    ]);
+    if (res.success) {
+      showSuccess("Gelombang berhasil ditambahkan!");
+      closeModal("modal-gelombang");
+      loadMasterData();
+    } else {
+      showError(res.message || "Gagal menyimpan.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// KONFIGURASI
+// ══════════════════════════════════════════════════════════════
+
+async function loadConfig() {
+  try {
+    // Tampilkan placeholder — config diambil via GAS
+    document.getElementById("config-list").innerHTML = `
+      <div class="alert alert-info" style="font-size:0.82rem;">
+        ℹ️ Edit konfigurasi menggunakan form di bawah ini.
+        Nilai saat ini tersimpan di Google Sheets sheet
+        <strong>config</strong>.
+      </div>
+    `;
+  } catch (e) { /* silent */ }
+}
+
+async function simpanConfig() {
+  const updates = [
+    ["TAHUN_AKADEMIK_AKTIF",
+     document.getElementById("cfg-ta").value],
+    ["TAHUN_ANGKATAN_AKTIF",
+     document.getElementById("cfg-angkatan").value],
+    ["GELOMBANG_AKTIF",
+     document.getElementById("cfg-gelombang").value],
+    ["NAMA_WAKET1",
+     document.getElementById("cfg-waket").value],
+    ["NAMA_KETUA",
+     document.getElementById("cfg-ketua").value],
+    ["KOTA_INSTITUSI",
+     document.getElementById("cfg-kota").value],
+  ];
+
+  const nonEmpty = updates.filter(([, v]) => v.trim());
+  if (!nonEmpty.length) {
+    showWarning("Isi minimal satu field konfigurasi.");
+    return;
+  }
+
+  showLoading("Menyimpan konfigurasi...");
+  try {
+    // Update satu per satu
+    for (const [param, value] of nonEmpty) {
+      await Master.update("config", param, [param, value, ""]);
+    }
+    showSuccess("Konfigurasi berhasil disimpan!");
+  } catch (e) {
+    showError("Terjadi kesalahan saat menyimpan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// KEAMANAN
+// ══════════════════════════════════════════════════════════════
+
+async function checkOverrideStatus() {
+  // Status override code ditampilkan berdasarkan info lokal
+  const el = document.getElementById("override-status");
+  if (el) {
+    el.className = "override-status override-notset";
+    el.textContent = "⚠️ Cek di Google Sheets config";
+  }
+}
+
+async function setOverrideCode() {
+  const code    = document.getElementById("input-override-code").value;
+  const confirm = document.getElementById("input-override-confirm").value;
+
+  if (!code || code.length < 6) {
+    showError("Override code minimal 6 karakter.");
+    return;
+  }
+  if (code !== confirm) {
+    showError("Konfirmasi kode tidak cocok.");
+    return;
+  }
+  if (!confirmDialog(
+    "Set override code baru? Kode lama akan diganti."
+  )) return;
+
+  showLoading("Menyimpan override code...");
+  try {
+    const res = await Users.setOverrideCode(code);
+    if (res.success) {
+      showSuccess("Override code berhasil diset!");
+      document.getElementById("input-override-code").value  = "";
+      document.getElementById("input-override-confirm").value = "";
+
+      const el = document.getElementById("override-status");
+      if (el) {
+        el.className = "override-status override-set";
+        el.textContent = "✅ Override Code sudah diset";
+      }
+    } else {
+      showError(res.message || "Gagal menyimpan.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+async function gantiPassword() {
+  const oldPwd  = document.getElementById("old-password").value;
+  const newPwd  = document.getElementById("new-password").value;
+  const confPwd = document.getElementById("confirm-password").value;
+
+  if (!oldPwd || !newPwd) {
+    showError("Password lama dan baru wajib diisi.");
+    return;
+  }
+  if (newPwd.length < 8) {
+    showError("Password baru minimal 8 karakter.");
+    return;
+  }
+  if (newPwd !== confPwd) {
+    showError("Konfirmasi password tidak cocok.");
+    return;
+  }
+
+  showLoading("Mengubah password...");
+  try {
+    const res = await Auth.changePassword(oldPwd, newPwd);
+    if (res.success) {
+      showSuccess("Password berhasil diubah!");
+      document.getElementById("old-password").value  = "";
+      document.getElementById("new-password").value  = "";
+      document.getElementById("confirm-password").value = "";
+    } else {
+      showError(res.message || "Gagal mengubah password.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// AUDIT LOG
+// ══════════════════════════════════════════════════════════════
+
+async function loadAuditLog() {
+  try {
+    // Audit log placeholder — data dari GAS
+    document.getElementById("tbody-audit").innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center text-muted"
+            style="padding:24px;">
+          Audit log tersimpan di Google Sheets sheet
+          <strong>audit_log</strong>.
+          Buka spreadsheet untuk melihat detail lengkap.
+        </td>
+      </tr>`;
+  } catch (e) { /* silent */ }
+}
+
+// ══════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════
+
+function switchAdminTab(tabId, btn) {
+  document.querySelectorAll(".admin-tab-content")
+          .forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".admin-tab-btn")
+          .forEach(b => b.classList.remove("active"));
+  document.getElementById(tabId).classList.add("active");
+  if (btn) btn.classList.add("active");
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add("show");
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove("show");
+}
+</script>
+
+</body>
+</html>
