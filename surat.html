@@ -436,19 +436,33 @@ document.addEventListener("DOMContentLoaded", () => {
 // ── Setup Card Access per Role ────────────────────────────────
 function setupCardAccess() {
   const user = getUser();
-  if (!user) return;
-  const role = user.userRole || user.role;
+  // Guard: jika user belum tersedia saat pertama load, coba ulang
+  if (!user) {
+    setTimeout(setupCardAccess, 200);
+    return;
+  }
+  const role = (user.userRole || user.role || "").toUpperCase();
 
-  if (!["ADMIN","PMB"].includes(role)) {
+  // Surat 1 — hanya ADMIN & PMB yang boleh generate
+  const canSurat1 = ["ADMIN", "PMB"].includes(role);
+  if (!canSurat1) {
     document.getElementById("card-surat1").style.opacity = "0.5";
-    document.getElementById("btn-surat1").disabled = true;
+    const btn1 = document.getElementById("btn-surat1");
+    btn1.disabled = true;
+    btn1.title = "Hanya PMB yang dapat generate Surat Penerimaan";
   }
 
-  if (!["ADMIN","AKADEMIK"].includes(role)) {
+  // Surat 2 & 3 — hanya ADMIN & AKADEMIK yang boleh generate
+  const canSurat23 = ["ADMIN", "AKADEMIK"].includes(role);
+  if (!canSurat23) {
     document.getElementById("card-surat2").style.opacity = "0.5";
     document.getElementById("card-surat3").style.opacity = "0.5";
-    document.getElementById("btn-surat2").disabled = true;
-    document.getElementById("btn-surat3").disabled = true;
+    const btn2 = document.getElementById("btn-surat2");
+    const btn3 = document.getElementById("btn-surat3");
+    btn2.disabled = true;
+    btn3.disabled = true;
+    btn2.title = "Hanya BAAK/AKADEMIK yang dapat generate SKD";
+    btn3.title = "Hanya BAAK/AKADEMIK yang dapat generate SK Kolektif";
   }
 }
 

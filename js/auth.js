@@ -103,7 +103,13 @@ function renderUserInfo() {
 // ── Render Sidebar ────────────────────────────────────────────
 function renderSidebar() {
   const user = getUser();
-  if (!user) return;
+  if (!user) {
+    // Jika user belum tersedia, coba lagi setelah DOM siap
+    if (document.readyState !== "complete") {
+      window.addEventListener("load", renderSidebar);
+    }
+    return;
+  }
 
   const role    = user.userRole || user.role || "";
   const sidebar = document.getElementById("sidebar-menu");
@@ -181,8 +187,17 @@ function initPage(allowedRoles = []) {
     return false;
   }
 
-  renderSidebar();
-  renderUserInfo();
+  // Pastikan DOM sudah siap sebelum render sidebar & user info
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      renderSidebar();
+      renderUserInfo();
+    });
+  } else {
+    renderSidebar();
+    renderUserInfo();
+  }
+
   return true;
 }
 
