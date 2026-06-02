@@ -437,7 +437,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function setupCardAccess() {
   const user = getUser();
   if (!user) return;
-  const role = user.userRole;
+  const role = user.userRole || user.role;
 
   // Surat 1 hanya PMB & Admin
   if (!["ADMIN","PMB"].includes(role)) {
