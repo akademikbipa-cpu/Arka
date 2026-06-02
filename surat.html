@@ -736,10 +736,9 @@ async function loadSuratLog() {
 
 // ── Regen Surat 2 ─────────────────────────────────────────────
 async function regenSurat2(camabaId) {
-  if (!["ADMIN","AKADEMIK"].includes(getUser()?.userRole)) {
-    showError("Hanya BAAK yang dapat generate SKD.");
-    return;
-  }
+  const u = getUser();
+  const role = u?.userRole || u?.role;
+  if (!["ADMIN","AKADEMIK"].includes(role)) {
 
   showLoading("Regenerate SKD...");
   try {
