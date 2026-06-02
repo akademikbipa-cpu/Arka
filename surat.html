@@ -439,26 +439,16 @@ function setupCardAccess() {
   if (!user) return;
   const role = user.userRole || user.role;
 
-  // Surat 1 hanya PMB & Admin
   if (!["ADMIN","PMB"].includes(role)) {
-    document.getElementById("card-surat1")
-            .style.opacity = "0.5";
+    document.getElementById("card-surat1").style.opacity = "0.5";
     document.getElementById("btn-surat1").disabled = true;
-    document.getElementById("btn-surat1").title =
-      "Hanya PMB yang dapat generate Surat 1";
   }
 
-  // Surat 2 & 3 hanya BAAK & Admin
   if (!["ADMIN","AKADEMIK"].includes(role)) {
-    ["card-surat2","card-surat3"].forEach(id => {
-      document.getElementById(id).style.opacity = "0.5";
-    });
+    document.getElementById("card-surat2").style.opacity = "0.5";
+    document.getElementById("card-surat3").style.opacity = "0.5";
     document.getElementById("btn-surat2").disabled = true;
     document.getElementById("btn-surat3").disabled = true;
-    document.getElementById("btn-surat2").title =
-      "Hanya BAAK yang dapat generate Surat 2";
-    document.getElementById("btn-surat3").title =
-      "Hanya BAAK yang dapat generate Surat 3";
   }
 }
 
@@ -736,10 +726,12 @@ async function loadSuratLog() {
 
 // ── Regen Surat 2 ─────────────────────────────────────────────
 async function regenSurat2(camabaId) {
-  const u = getUser();
-  const role = u?.userRole || u?.role;
+  const user = getUser();
+  const role = user?.userRole || user?.role;
   if (!["ADMIN","AKADEMIK"].includes(role)) {
-
+    showError("Hanya BAAK yang dapat generate SKD.");
+    return;
+  }
   showLoading("Regenerate SKD...");
   try {
     const res = await Surat.generate2(camabaId);
