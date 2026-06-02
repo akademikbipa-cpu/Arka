@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARKA — Pembayaran</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .payment-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .payment-card-header {
+      padding: 14px 20px;
+      background: var(--orange);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .payment-card-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .payment-card-body { padding: 20px; }
+    .rincian-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .rincian-row:last-child { border-bottom: none; }
+    .rincian-label {
+      font-size: 0.875rem;
+      color: var(--text);
+      flex: 1;
+    }
+    .rincian-input {
+      width: 160px;
+      text-align: right;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+      background: var(--primary-light);
+      border-top: 2px solid var(--primary);
+      font-weight: 700;
+    }
+    .total-label { color: var(--primary); font-size: 0.95rem; }
+    .total-value { color: var(--primary); font-size: 1.1rem; }
+    .selisih-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .selisih-kurang {
+      background: var(--red-light);
+      color: var(--red);
+    }
+    .selisih-lebih {
+      background: var(--green-light);
+      color: var(--green);
+    }
+    .selisih-lunas {
+      background: var(--green-light);
+      color: var(--green);
+    }
+    .camaba-info-bar {
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .camaba-info-name {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--primary);
+    }
+    .camaba-info-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .summary-item {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      border-top: 3px solid var(--orange);
+    }
+    .summary-item.green { border-top-color: var(--green); }
+    .summary-item.red   { border-top-color: var(--red); }
+    .summary-value {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--orange);
+      margin-bottom: 4px;
+    }
+    .summary-item.green .summary-value { color: var(--green); }
+    .summary-item.red   .summary-value { color: var(--red); }
+    .summary-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+  <div class="loading-text">Memuat...</div>
+</div>
+
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar">
+    <div class="sidebar-logo">
+      <div>
+        <div class="sidebar-logo-text">🎓 ARKA</div>
+        <div class="sidebar-logo-sub">SLA PMB STMIK Bina Patria</div>
+      </div>
+    </div>
+    <div class="sidebar-section">Menu</div>
+    <nav id="sidebar-menu"></nav>
+    <div class="sidebar-bottom">
+      <button id="btn-logout" class="sidebar-item w-100"
+        style="border:none;background:none;color:rgba(255,255,255,0.6);
+               font-size:0.875rem;cursor:pointer;text-align:left;">
+        🚪 Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-title">💰 Status Pembayaran</div>
+    <div class="header-right">
+      <span class="role-badge" id="user-role"></span>
+      <div class="user-avatar" id="user-avatar"></div>
+      <span class="user-name" id="user-name"></span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header d-flex justify-between align-center flex-wrap gap-1">
+      <div>
+        <div class="page-title">Status Pembayaran</div>
+        <div class="page-subtitle">
+          Keuangan: CRU | PMB & BAAK: Read
+        </div>
+      </div>
+      <button class="btn btn-outline" onclick="loadPembayaranList()">
+        🔄 Refresh
+      </button>
+    </div>
+
+    <!-- Summary KPI -->
+    <div class="summary-grid" id="summary-grid">
+      <div class="summary-item">
+        <div class="summary-value" id="sum-total">—</div>
+        <div class="summary-label">Total Pendaftar</div>
+      </div>
+      <div class="summary-item green">
+        <div class="summary-value" id="sum-lunas">—</div>
+        <div class="summary-label">Sudah Lunas</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-value" id="sum-sebagian">—</div>
+        <div class="summary-label">Bayar Sebagian</div>
+      </div>
+      <div class="summary-item red">
+        <div class="summary-value" id="sum-belum">—</div>
+        <div class="summary-label">Belum Bayar</div>
+      </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="card" style="padding:16px; margin-bottom:16px;">
+      <div class="filter-bar">
+        <input type="text" id="search-input" class="search-input"
+               placeholder="🔍 Cari nama camaba..." />
+        <select id="filter-status" class="form-control"
+                style="width:auto; min-width:160px;">
+          <option value="">Semua Status Bayar</option>
+          <option value="BELUM BAYAR">Belum Bayar</option>
+          <option value="BAYAR SEBAGIAN">Bayar Sebagian</option>
+          <option value="LUNAS">Lunas</option>
+        </select>
+        <select id="filter-kelas" class="form-control"
+                style="width:auto; min-width:140px;">
+          <option value="">Semua Kelas</option>
+          <option value="REG">Reguler</option>
+          <option value="PAR">Paralel</option>
+          <option value="FLEX">Flex Class</option>
+          <option value="RPL">RPL</option>
+        </select>
+        <select id="filter-gelombang" class="form-control"
+                style="width:auto; min-width:150px;">
+          <option value="">Semua Gelombang</option>
+          <option value="GEL-2026-1">Gelombang 1</option>
+          <option value="GEL-2026-2">Gelombang 2</option>
+          <option value="GEL-2026-3">Gelombang 3</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="resetFilter()">
+          ✕ Reset
+        </button>
+      </div>
+      <div style="font-size:0.78rem; color:var(--text-muted); margin-top:8px;">
+        Menampilkan <strong id="count-shown">0</strong> dari
+        <strong id="count-total">0</strong> data
+      </div>
+    </div>
+
+    <!-- Table List -->
+    <div class="card" style="padding:0;" id="section-list">
+      <div class="table-wrapper">
+        <table id="tbl-pembayaran">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama Camaba</th>
+              <th>Prodi</th>
+              <th>Kelas</th>
+              <th>Gelombang</th>
+              <th>Total Terbayar</th>
+              <th>Status Bayar</th>
+              <th>Konfirmasi Oleh</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-pembayaran">
+            <tr>
+              <td colspan="9" class="text-center text-muted"
+                  style="padding:32px;">
+                ⏳ Memuat data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Detail Pembayaran -->
+    <div id="section-detail" class="hidden">
+
+      <button class="btn btn-outline mb-2" onclick="backToList()">
+        ← Kembali ke Daftar
+      </button>
+
+      <!-- Info Camaba -->
+      <div class="camaba-info-bar" id="camaba-info-bar"></div>
+
+      <!-- Form Rincian -->
+      <form id="form-pembayaran" onsubmit="return false;">
+        <input type="hidden" id="pay-camaba-id" />
+
+        <div class="payment-card">
+          <div class="payment-card-header">
+            <div class="payment-card-title">
+              💰 Rincian Pembayaran
+            </div>
+            <span id="pay-status-badge"></span>
+          </div>
+          <div class="payment-card-body">
+
+            <div class="rincian-row">
+              <div class="rincian-label">Uang Pendaftaran</div>
+              <input id="pay-pendaftaran" type="number"
+                     class="form-control rincian-input"
+                     placeholder="0" min="0"
+                     onchange="hitungTotal()" />
+            </div>
+
+            <div class="rincian-row">
+              <div class="rincian-label">Jas Almamater</div>
+              <input id="pay-almamater" type="number"
+                     class="form-control rincian-input"
+                     placeholder="0" min="0"
+                     onchange="hitungTotal()" />
+            </div>
+
+            <div class="rincian-row">
+              <div class="rincian-label">Kemahasiswaan</div>
+              <input id="pay-kemahasiswaan" type="number"
+                     class="form-control rincian-input"
+                     placeholder="0" min="0"
+                     onchange="hitungTotal()" />
+            </div>
+
+            <div class="rincian-row">
+              <div class="rincian-label">Perpustakaan</div>
+              <input id="pay-perpustakaan" type="number"
+                     class="form-control rincian-input"
+                     placeholder="0" min="0"
+                     onchange="hitungTotal()" />
+            </div>
+
+            <div class="rincian-row">
+              <div class="rincian-label">UKT Bulan Pertama</div>
+              <input id="pay-ukt" type="number"
+                     class="form-control rincian-input"
+                     placeholder="0" min="0"
+                     onchange="hitungTotal()" />
+            </div>
+
+          </div>
+
+          <!-- Total -->
+          <div class="total-row">
+            <div class="total-label">Total Terbayar</div>
+            <div class="total-value" id="pay-total-display">Rp 0</div>
+          </div>
+
+          <!-- Total Tagihan -->
+          <div style="padding:12px 20px; border-top:1px solid var(--border);">
+            <div class="rincian-row" style="padding:0;">
+              <div class="rincian-label fw-bold">
+                Total Tagihan (opsional)
+                <div style="font-size:0.75rem; color:var(--text-muted);
+                            font-weight:400;">
+                  Isi untuk hitung kurang/lebih bayar
+                </div>
+              </div>
+              <input id="pay-tagihan" type="number"
+                     class="form-control rincian-input"
+                     placeholder="0" min="0"
+                     onchange="hitungSelisih()" />
+            </div>
+          </div>
+
+          <!-- Selisih -->
+          <div id="pay-selisih-row" class="selisih-row hidden">
+            <span id="pay-selisih-label">Selisih</span>
+            <span id="pay-selisih-value"></span>
+          </div>
+
+        </div>
+
+        <!-- Catatan -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📝 Catatan Pembayaran</div>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <textarea id="pay-catatan" class="form-control" rows="3"
+                      placeholder="Catatan konfirmasi pembayaran...">
+            </textarea>
+          </div>
+        </div>
+
+        <!-- Tombol Aksi -->
+        <div id="section-action" class="d-flex gap-1">
+          <button type="button" class="btn btn-success"
+                  onclick="simpanPembayaran()">
+            💾 Simpan & Konfirmasi
+          </button>
+          <button type="button" class="btn btn-outline"
+                  onclick="backToList()">
+            Batal
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+  </main>
+</div>
+
+<!-- Scripts -->
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+
+let allCamabaList = [];
+let currentCamaba = null;
+
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  if (!initPage()) return;
+  loadPembayaranList();
+
+  // Cek URL param
+  const params = new URLSearchParams(window.location.search);
+  const id     = params.get("id");
+  if (id) openDetail(id);
+});
+
+// ── Load List ─────────────────────────────────────────────────
+async function loadPembayaranList() {
+  showLoading("Memuat data pembayaran...");
+  try {
+    const res = await Camaba.getAll();
+    if (!res.success) {
+      showError(res.message || "Gagal memuat data.");
+      return;
+    }
+    allCamabaList = res.data || [];
+    renderSummary(allCamabaList);
+    renderList(allCamabaList);
+    document.getElementById("count-total").textContent =
+      allCamabaList.length;
+    setupFilters();
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── Render Summary ────────────────────────────────────────────
+function renderSummary(data) {
+  const total    = data.length;
+  const lunas    = data.filter(c => c.statusPembayaran === "LUNAS").length;
+  const sebagian = data.filter(
+    c => c.statusPembayaran === "BAYAR SEBAGIAN").length;
+  const belum    = data.filter(
+    c => c.statusPembayaran === "BELUM BAYAR").length;
+
+  document.getElementById("sum-total").textContent    = total;
+  document.getElementById("sum-lunas").textContent    = lunas;
+  document.getElementById("sum-sebagian").textContent = sebagian;
+  document.getElementById("sum-belum").textContent    = belum;
+}
+
+// ── Render List ───────────────────────────────────────────────
+function renderList(data) {
+  const tbody = document.getElementById("tbody-pembayaran");
+  document.getElementById("count-shown").textContent = data.length;
+
+  if (!data.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9">
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <div class="empty-state-title">Tidak ada data</div>
+          </div>
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map((c, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>
+        <strong>${c.namaLengkap}</strong>
+        <div style="font-size:0.75rem; color:var(--text-muted);">
+          ${c.id}
+        </div>
+      </td>
+      <td style="font-size:0.82rem;">${c.programStudi || "-"}</td>
+      <td>
+        <span class="badge badge-gray">
+          ${getKelasLabel(c.jenisKelas)}
+        </span>
+      </td>
+      <td style="font-size:0.82rem;">
+        ${getGelombangLabel(c.gelombang)}
+      </td>
+      <td style="font-family:monospace; font-size:0.85rem;">
+        ${c.totalTerbayar
+          ? formatRupiah(c.totalTerbayar)
+          : "<em class='text-muted'>Belum ada</em>"}
+      </td>
+      <td>${getStatusBadge(c.statusPembayaran)}</td>
+      <td style="font-size:0.82rem;">${c.dikonfirmasiOleh || "-"}</td>
+      <td>
+        <button class="btn btn-sm btn-${isKeuangan() ? 'primary' : 'outline'}"
+                onclick="openDetail('${c.id}')">
+          ${isKeuangan() ? "✏️ Input" : "👁️ Lihat"}
+        </button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+// ── Open Detail ───────────────────────────────────────────────
+async function openDetail(camabaId) {
+  showLoading("Memuat detail pembayaran...");
+  try {
+    // Ambil data camaba
+    const resCamaba = await Camaba.getById(camabaId);
+    if (!resCamaba.success) {
+      showError("Data camaba tidak ditemukan.");
+      return;
+    }
+    currentCamaba = resCamaba.data;
+
+    // Ambil data pembayaran
+    const resPay = await Pembayaran.get(camabaId);
+
+    // Render
+    renderInfoBar(currentCamaba);
+
+    if (resPay.success && resPay.data) {
+      fillForm(resPay.data);
+    }
+
+    document.getElementById("pay-camaba-id").value = camabaId;
+
+    // Sembunyikan aksi untuk non-keuangan
+    document.getElementById("section-action").style.display =
+      isKeuangan() ? "" : "none";
+
+    // Disable input untuk non-keuangan
+    if (!isKeuangan()) {
+      document.querySelectorAll(
+        "#form-pembayaran input, #form-pembayaran textarea"
+      ).forEach(el => el.disabled = true);
+    }
+
+    document.getElementById("section-list").classList.add("hidden");
+    document.getElementById("section-detail").classList.remove("hidden");
+
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── Render Info Bar ───────────────────────────────────────────
+function renderInfoBar(c) {
+  document.getElementById("camaba-info-bar").innerHTML = `
+    <div>
+      <div class="camaba-info-name">${c.namaLengkap}</div>
+      <div class="camaba-info-meta">
+        ${c.id} &nbsp;|&nbsp;
+        ${c.programStudi} &nbsp;|&nbsp;
+        ${getKelasLabel(c.jenisKelas)} &nbsp;|&nbsp;
+        ${getGelombangLabel(c.gelombang)}
+        ${c.beasiswa && c.beasiswa !== "Tidak Ada"
+          ? `&nbsp;|&nbsp; 🎖️ ${c.beasiswa}` : ""}
+      </div>
+    </div>
+    <div class="d-flex gap-1 align-center flex-wrap">
+      ${getStatusBadge(c.statusProses)}
+      ${getStatusBadge(c.statusPembayaran)}
+    </div>
+  `;
+}
+
+// ── Fill Form ─────────────────────────────────────────────────
+function fillForm(p) {
+  setNum("pay-pendaftaran",  p.pendaftaran);
+  setNum("pay-almamater",    p.jasAlmamater);
+  setNum("pay-kemahasiswaan",p.kemahasiswaan);
+  setNum("pay-perpustakaan", p.perpustakaan);
+  setNum("pay-ukt",          p.uktBulanPertama);
+
+  document.getElementById("pay-catatan").value =
+    p.catatan || "";
+
+  const badge = document.getElementById("pay-status-badge");
+  if (badge) badge.innerHTML = getStatusBadge(p.statusPembayaran);
+
+  hitungTotal();
+}
+
+// ── Hitung Total ──────────────────────────────────────────────
+function hitungTotal() {
+  const vals = [
+    "pay-pendaftaran","pay-almamater",
+    "pay-kemahasiswaan","pay-perpustakaan","pay-ukt"
+  ].map(id => Number(document.getElementById(id).value) || 0);
+
+  const total = vals.reduce((a, b) => a + b, 0);
+  document.getElementById("pay-total-display").textContent =
+    formatRupiah(total);
+
+  hitungSelisih();
+}
+
+function hitungSelisih() {
+  const total   = getTotalTerbayar();
+  const tagihan = Number(
+    document.getElementById("pay-tagihan").value) || 0;
+
+  const rowEl    = document.getElementById("pay-selisih-row");
+  const labelEl  = document.getElementById("pay-selisih-label");
+  const valueEl  = document.getElementById("pay-selisih-value");
+
+  if (tagihan <= 0) {
+    rowEl.classList.add("hidden");
+    return;
+  }
+
+  rowEl.classList.remove("hidden");
+  rowEl.className = "selisih-row";
+
+  const selisih = tagihan - total;
+  if (selisih > 0) {
+    rowEl.classList.add("selisih-kurang");
+    labelEl.textContent = "(+) Kurang Bayar";
+    valueEl.textContent = formatRupiah(selisih);
+  } else if (selisih < 0) {
+    rowEl.classList.add("selisih-lebih");
+    labelEl.textContent = "(-) Lebih Bayar";
+    valueEl.textContent = formatRupiah(Math.abs(selisih));
+  } else {
+    rowEl.classList.add("selisih-lunas");
+    labelEl.textContent = "✅ LUNAS";
+    valueEl.textContent = formatRupiah(0);
+  }
+}
+
+function getTotalTerbayar() {
+  return ["pay-pendaftaran","pay-almamater",
+          "pay-kemahasiswaan","pay-perpustakaan","pay-ukt"]
+    .reduce((s, id) =>
+      s + (Number(document.getElementById(id).value) || 0), 0);
+}
+
+// ── Simpan Pembayaran ─────────────────────────────────────────
+async function simpanPembayaran() {
+  const camabaId = document.getElementById("pay-camaba-id").value;
+  if (!camabaId) return;
+
+  const data = {
+    pendaftaran:     Number(document.getElementById("pay-pendaftaran").value)  || 0,
+    jasAlmamater:    Number(document.getElementById("pay-almamater").value)    || 0,
+    kemahasiswaan:   Number(document.getElementById("pay-kemahasiswaan").value)|| 0,
+    perpustakaan:    Number(document.getElementById("pay-perpustakaan").value) || 0,
+    uktBulanPertama: Number(document.getElementById("pay-ukt").value)          || 0,
+    totalTagihan:    Number(document.getElementById("pay-tagihan").value)      || 0,
+    catatan:         document.getElementById("pay-catatan").value,
+  };
+
+  showLoading("Menyimpan data pembayaran...");
+  try {
+    const res = await Pembayaran.update(camabaId, data);
+    if (res.success) {
+      showSuccess(
+        "Pembayaran berhasil dikonfirmasi! Status: " +
+        res.statusPembayaran
+      );
+
+      // Update badge
+      const badge = document.getElementById("pay-status-badge");
+      if (badge) badge.innerHTML = getStatusBadge(res.statusPembayaran);
+
+      // Reload list
+      Camaba.getAll().then(r => {
+        if (r.success) {
+          allCamabaList = r.data;
+          renderSummary(allCamabaList);
+        }
+      });
+
+    } else {
+      showError(res.message || "Gagal menyimpan.");
+    }
+  } catch (e) {
+    showError("Terjadi kesalahan.");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── Filter ────────────────────────────────────────────────────
+function setupFilters() {
+  ["search-input","filter-status","filter-kelas","filter-gelombang"]
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener("input",  applyFilter);
+        el.addEventListener("change", applyFilter);
+      }
+    });
+}
+
+function applyFilter() {
+  const search    = document.getElementById("search-input")
+                            .value.toLowerCase();
+  const status    = document.getElementById("filter-status").value;
+  const kelas     = document.getElementById("filter-kelas").value;
+  const gelombang = document.getElementById("filter-gelombang").value;
+
+  const filtered = allCamabaList.filter(c => {
+    const matchSearch = !search ||
+      c.namaLengkap?.toLowerCase().includes(search) ||
+      c.id?.toLowerCase().includes(search);
+    const matchStatus    = !status    || c.statusPembayaran === status;
+    const matchKelas     = !kelas     || c.jenisKelas        === kelas;
+    const matchGelombang = !gelombang || c.gelombang          === gelombang;
+    return matchSearch && matchStatus && matchKelas && matchGelombang;
+  });
+
+  renderList(filtered);
+}
+
+function resetFilter() {
+  ["search-input","filter-status",
+   "filter-kelas","filter-gelombang"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  renderList(allCamabaList);
+}
+
+function backToList() {
+  document.getElementById("section-detail").classList.add("hidden");
+  document.getElementById("section-list").classList.remove("hidden");
+  currentCamaba = null;
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function setNum(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val || 0;
+}
+</script>
+
+</body>
+</html>
