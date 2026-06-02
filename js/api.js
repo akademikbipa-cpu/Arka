@@ -91,7 +91,8 @@ function requireAuth(allowedRoles = []) {
 function hasRole(...roles) {
   const user = getUser();
   if (!user) return false;
-  return roles.includes(user.userRole);
+  const role = user.userRole || user.role;
+ return roles.includes(role);
 }
 
 function isAdmin()    { return hasRole("ADMIN"); }
